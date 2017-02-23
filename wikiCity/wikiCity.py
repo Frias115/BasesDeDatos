@@ -156,17 +156,17 @@ with open('wikicity.json','r') as file:
     for i in file:
         data = json.loads(i)
     for i in data:
-        print(i)
         ciudad = Ciudad(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
-        for j in data["location"]["coordinates"]:
+        for j in i["location"]["coordinates"]:
             ciudad.geolocalizacion.append(j)
         for j in i["POI"]:
-            puntoInteres = puntoInteres(j["name"], j["kind"])
+            punto = puntoInteres(j["name"], j["kind"])
             ciudad.puntosInteres.append(puntoInteres)
 
+        ciudades.append(ciudad)
     file.close()
 
 for i in ciudades:
-    print(i)
+    print(i.nombre)
 
 
