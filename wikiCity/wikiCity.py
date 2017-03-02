@@ -1,172 +1,201 @@
 
 import json
+import pymongo
 
-class puntoInteres:
+# name
+# kind
+# direction
+# geolocation
 
-    def __init__(self, nombre, tipo=None, direccion=None, geolocalizacion=None):
-        self._nombre = nombre
-        self._tipo = tipo
-        self._direccion = direccion
-        self._geolocalizacion = geolocalizacion
+class POI:
 
-        self.nombreFlag = False
-        self.tipoFlag = False
-        self.direccionFlag = False
-        self.geolocalizacionFlag = False
+    def __init__(self, name, kind=None, address=None, geolocation=None, **args):
+        self._name = name
+        self._kind = kind
+        self._address = address
+        self._geolocation = geolocation
+
+        self.nameFlag = False
+        self.kindFlag = False
+        self.addressFlag = False
+        self.geolocationFlag = False
 
 
     @property
-    def nombre(self):
-        return self._nombre
+    def name(self):
+        return self._name
 
     @property
-    def tipo(self):
-        return self._tipo
+    def kind(self):
+        return self._kind
 
     @property
-    def direccion(self):
-        return self._direccion
+    def address(self):
+        return self._address
 
     @property
-    def geolocalizacion(self):
-        return self._geolocalizacion
+    def geolocation(self):
+        return self._geolocation
 
 
 
-    @nombre.setter
-    def nombre(self, nombre):
-        self._nombre = nombre
-        self.nombreFlag = True
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self.nameFlag = True
 
-    @tipo.setter
-    def tipo(self, tipo):
-        self._tipo = tipo
-        self.tipoFlag = True
+    @kind.setter
+    def kind(self, kind):
+        self._kind = kind
+        self.kindFlag = True
 
-    @direccion.setter
-    def direccion(self, direccion):
-        self._direccion = direccion
-        self.direccionFlag = True
+    @address.setter
+    def address(self, address):
+        self._address = address
+        self.addressFlag = True
 
-    @geolocalizacion.setter
-    def geolocalizacion(self, geolocalizacion):
-        self._geolocalizacion = geolocalizacion
-        self.geolocalizacionFlag = True
+    @geolocation.setter
+    def geolocation(self, geolocation):
+        self._geolocation = geolocation
+        self.geolocationFlag = True
 
 
-class Ciudad:
+# name
+# province
+# autonomous_community
+# geolocation
+# area
+# elevation
+# population
 
-    def __init__(self, nombre, provincia=None, comunidadAutonoma=None, superficie=None, altitud=None, poblacion=None):
-        self._nombre = nombre
-        self._provincia = provincia
-        self._comunidadAutonoma = comunidadAutonoma
-        self._superficie = superficie
-        self._altitud = altitud
-        self._poblacion = poblacion
-        self._geolocalizacion = []
-        self._puntosInteres = []
+class City:
 
-        self.nombreFlag = False
-        self.provinciaFlag = False
-        self.comunidadAutonomaFlag = False
-        self.geolocalizacionFlag = False
-        self.superficieFlag = False
-        self.altitudFlag = False
-        self.poblacionFlag = False
-        self.puntosInteresFlag = False
+    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None, **args):
+        self._name = name
+        self._province = province
+        self._autonomous_community = autonomous_community
+        self._area = area
+        self._elevation = elevation
+        self._population = population
+        self._geolocation = []
+        self._POIs = []
 
-    @property
-    def nombre(self):
-        return self._nombre
-
-    @property
-    def provincia(self):
-        return self._provincia
-
-    @property
-    def comunidadAutonoma(self):
-        return self._comunidadAutonoma
+        self.nameFlag = False
+        self.provinceFlag = False
+        self.autonomous_communityFlag = False
+        self.geolocationFlag = False
+        self.areaFlag = False
+        self.elevationFlag = False
+        self.populationFlag = False
+        self.POIsFlag = False
 
     @property
-    def geolocalizacion(self):
-        return self._geolocalizacion
+    def name(self):
+        return self._name
 
     @property
-    def superficie(self):
-        return self._superficie
+    def province(self):
+        return self._province
 
     @property
-    def altitud(self):
-        return self._altitud
+    def autonomous_community(self):
+        return self._autonomous_community
 
     @property
-    def poblacion(self):
-        return self._poblacion
+    def geolocation(self):
+        return self._geolocation
 
     @property
-    def puntosInteres(self):
-        return self._puntosInteres
+    def area(self):
+        return self._area
+
+    @property
+    def elevation(self):
+        return self._elevation
+
+    @property
+    def population(self):
+        return self._population
+
+    @property
+    def POIs(self):
+        return self._POIs
 
 
 
-    @nombre.setter
-    def nombre(self, nombre):
-        self._nombre = nombre
-        self.nombreFlag = True
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self.nameFlag = True
 
-    @provincia.setter
-    def provincia(self, provincia):
-        self._provincia = provincia
-        self.provinciaFlag = True
+    @province.setter
+    def province(self, province):
+        self._province = province
+        self.provinceFlag = True
 
-    @comunidadAutonoma.setter
-    def comunidadAutonoma(self, comunidadAutonoma):
-        self._comunidadAutonoma = comunidadAutonoma
-        self.comunidadAutonomaFlag = True
+    @autonomous_community.setter
+    def autonomous_community(self, autonomous_community):
+        self._autonomous_community = autonomous_community
+        self.autonomous_communityFlag = True
 
-    @geolocalizacion.setter
-    def geolocalizacion(self, geolocalizacion):
-        self._geolocalizacion = geolocalizacion
-        self.geolocalizacionFlag = True
+    @geolocation.setter
+    def geolocation(self, geolocation):
+        self._geolocation = geolocation
+        self.geolocationFlag = True
 
-    @superficie.setter
-    def superficie(self, superficie):
-        self._superficie = superficie
-        self.superficieFlag = True
+    @area.setter
+    def area(self, area):
+        self._area = area
+        self.areaFlag = True
 
-    @altitud.setter
-    def altitud(self, altitud):
-        self._altitud = altitud
-        self.altitudFlag = True
+    @elevation.setter
+    def elevation(self, elevation):
+        self._elevation = elevation
+        self.elevationFlag = True
 
-    @poblacion.setter
-    def poblacion(self, poblacion):
-        self._poblacion = poblacion
-        self.poblacionFlag = True
+    @population.setter
+    def population(self, population):
+        self._population = population
+        self.populationFlag = True
 
-    @puntosInteres.setter
-    def puntosInteres(self, puntosInteres):
-        self._puntosInteres = puntosInteres
-        self.puntosInteresFlag = True
+    @POIs.setter
+    def POIs(self, POIs):
+        self._POIs = POIs
+        self.POIsFlag = True
 
 
-ciudades = []
+
+
+Cities = []
 
 with open('wikicity.json','r') as file:
     for i in file:
         data = json.loads(i)
     for i in data:
-        ciudad = Ciudad(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
+        City = City(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
         for j in i["location"]["coordinates"]:
-            ciudad.geolocalizacion.append(j)
+            City.geolocation.append(j)
         for j in i["POI"]:
-            punto = puntoInteres(j["name"], j["kind"])
-            ciudad.puntosInteres.append(puntoInteres)
+            punto = POI(j["name"], j["kind"])
+            City.POIs.append(POI)
 
-        ciudades.append(ciudad)
+        Cities.append(City)
     file.close()
 
-for i in ciudades:
-    print(i.nombre)
+for i in Cities:
+    print(i.name)
+
+
+def parser(self):
+
+
+#Compuebo si existe una City con esos mismo datos
+def save(self):
+
+def query(self, *listOfInstruccions):
+    #http://api.mongodb.com/python/current/tutorial.html#documents
+
+
+
 
 
