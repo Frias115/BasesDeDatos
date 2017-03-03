@@ -70,7 +70,7 @@ class POI:
 
 class City:
 
-    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None, **args):
+    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None):
         self._name = name
         self._province = province
         self._autonomous_community = autonomous_community
@@ -172,28 +172,38 @@ with open('wikicity.json','r') as file:
     for i in file:
         data = json.loads(i)
     for i in data:
-        City = City(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
+        city = City(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
         for j in i["location"]["coordinates"]:
-            City.geolocation.append(j)
+            city.geolocation.append(j)
         for j in i["POI"]:
             punto = POI(j["name"], j["kind"])
-            City.POIs.append(POI)
+            city.POIs.append(POI)
 
-        Cities.append(City)
+        Cities.append(city)
     file.close()
 
-for i in Cities:
-    print(i.name)
 
 
-def parser(self):
+#def parser(self):
 
 
 #Compuebo si existe una City con esos mismo datos
-def save(self):
+#def save(self):
 
+one = 'hola'
+
+# http://api.mongodb.com/python/current/tutorial.html#documents
 def query(self, *listOfInstruccions):
-    #http://api.mongodb.com/python/current/tutorial.html#documents
+    from pymongo import MongoClient
+    client = MongoClient('localhost', 27017)
+    db = client.test.restaurants
+    result = db.find()
+
+    for document in result:
+        print(document)
+
+
+query(one)
 
 
 
