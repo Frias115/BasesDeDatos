@@ -190,14 +190,16 @@ with open('wikicity.json','r') as file:
 #Compuebo si existe una City con esos mismo datos
 #def save(self):
 
-one = 'hola'
+one = [ {'$match' : {'borough' : 'Bronx'}} , {'$project' : {'address.street' : 1}} ]
+
 
 # http://api.mongodb.com/python/current/tutorial.html#documents
 def query(self, *listOfInstruccions):
+
     from pymongo import MongoClient
     client = MongoClient('localhost', 27017)
     db = client.test.restaurants
-    result = db.find()
+    result = db.aggregate(listOfInstruccions)
 
     for document in result:
         print(document)
