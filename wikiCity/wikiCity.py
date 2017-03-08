@@ -168,7 +168,7 @@ class City:
 
 Cities = []
 
-with open('wikicity.json','r') as file:
+"""with open('wikicity.json','r') as file:
     for i in file:
         data = json.loads(i)
     for i in data:
@@ -180,21 +180,43 @@ with open('wikicity.json','r') as file:
             city.POIs.append(POI)
 
         Cities.append(city)
-    file.close()
+    file.close()"""
 
 
 
-#def parser(self):
+def parser(datos):
+    for i in datos:
+        city = City(i["address"]["street"])
+        #print(city.name)
+        Cities.append(city)
+
+
+        #como manejar los datos que no conocemos
+
 
 
 #Compuebo si existe una City con esos mismo datos
-#def save(self):
+def save(datos):
+    update = []
+    for tupla in datos:
+        print(tupla.nameFlag)
+        if(tupla.nameFlag == True):
+            print(tupla.nameFlag)
+            update.append({'name' : tupla.name})
+
+    print(update)
+
+
+
+            #dentro del for vamos a iterar sobre id no sobre los atributos de la id
+    #recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
+
 
 one = [ {'$match' : {'borough' : 'Bronx'}} , {'$project' : {'address.street' : 1}} ]
 
-
+datosQuery = []
 # http://api.mongodb.com/python/current/tutorial.html#documents
-def query(self, *listOfInstruccions):
+def query(listOfInstruccions):
 
     from pymongo import MongoClient
     client = MongoClient('localhost', 27017)
@@ -203,9 +225,23 @@ def query(self, *listOfInstruccions):
 
     for document in result:
         print(document)
+        datosQuery.append(document)
+
 
 
 query(one)
+
+parser(datosQuery)
+
+Cities[0].name = 'prueba'
+
+#No cambia los flags en los setters, no se sabe por que
+
+
+
+save(Cities)
+
+
 
 
 
