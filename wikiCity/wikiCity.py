@@ -6,7 +6,7 @@ from pymongo import MongoClient
 # direction
 # geolocation
 
-class POI:
+class POI(object):
 
     def __init__(self, name, kind=None, address=None, geolocation=None, **args):
         self._name = name
@@ -62,7 +62,7 @@ class POI:
 # elevation
 # population
 
-class City:
+class City(object):
 
     def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None, **args ):
         self._name = name
@@ -76,34 +76,41 @@ class City:
         self.modfieds=set()
 
     # Compuebo si existe una City con esos mismo datos
-    def save(datos):
-        update = []  # esto ahora es el modifieds de city y de poi
-        for tupla in datos:
-            print(tupla.nameFlag)
-            if (tupla.nameFlag == True):
-                print(tupla.nameFlag)
-                update.append({'name': tupla.name})
+    def save(self, datos):
 
-        print(update)
+
+        prueba = self.modfieds.pop()
+        print (prueba)
+
+        for i in self.modfieds:
+            print('a')
+
+        self.modfieds.clear()
+
+        #PREGUNTA: Con que comando subo las cosas a la base de datos y hay diferentes comandos cuando ya existe el objeto en base de datos o no
+        # si el insert para nuevos, update para existentes, chequeo la id para saber cual utilizar
 
         # dentro del for vamos a iterar sobre id no sobre los atributos de la id
         # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
 
-    # http://api.mongodb.com/python/current/tutorial.html#documents
     def query(self, listOfInstruccions):
         resultadosQuery = []
         Cities = []
 
         client = MongoClient('localhost', 27017)
-        db = client.test.wikicity
-        result = db.find()
+        collection = client.test.wikicity
+        result = collection.aggregate(listOfInstruccions)
 
         for document in result:
             print(document)
             resultadosQuery.append(document)
 
+        print(resultadosQuery[0])
+
+        #PREGUNTA: A la hora de hacer un query solo pillo un resultado, y con next cogo el siguiente? Deberia ser un indice y utilizar next para coger el siguiente
+
         for i in resultadosQuery:
-            city = City(i["name"])
+            city = City(i['autonomous_community'])
             # print(city.name)
             Cities.append(city)
 
@@ -141,12 +148,10 @@ class City:
     def POIs(self):
         return self._POIs
 
-
-
     @name.setter
-    def name(self, name):
-        self._name = name
-        self.modfieds.add("name")
+    def name(self, val):
+        self.modfieds.add('name')
+        self._name = val
 
     @province.setter
     def province(self, province):
@@ -199,13 +204,11 @@ class City:
     file.close()"""
 
 
-#PREGUNTA: como manejar los datos que no conocemos en el parser
+#PREGUNTA: como manejar los datos que no conocemos en el parser, con el **args y el update dinamico
 
 #PREGUNTA: No cambia los flags en los setters, no se sabe por que, solucionado en ciudad
 
 #PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son de ciudad y el parser va directamente dentro de la funcion query
-
-#PREGUNNTA: podemos utilizar librerias como bson para cambiar los tipos de datos
 
 
 
@@ -213,12 +216,11 @@ if __name__ == "__main__":
 
     prueba = City('prueba')
 
-    one = [{'$match': {'borough': 'Bronx'}}, {'$project': {'address.street': 1}}]
+    one = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
 
-    prueba.query(one)
+    #ciudades = prueba.query(one)
+    print(prueba.name)
 
-    #parser(datosQuery)
+    prueba.name = 'cambiado'
 
-    #Cities[0].name = 'prueba'
-
-    #save(Cities)
+    prueba.save(one)
