@@ -75,6 +75,40 @@ class City:
         self._POIs = []
         self.modfieds=set()
 
+    # Compuebo si existe una City con esos mismo datos
+    def save(datos):
+        update = []  # esto ahora es el modifieds de city y de poi
+        for tupla in datos:
+            print(tupla.nameFlag)
+            if (tupla.nameFlag == True):
+                print(tupla.nameFlag)
+                update.append({'name': tupla.name})
+
+        print(update)
+
+        # dentro del for vamos a iterar sobre id no sobre los atributos de la id
+        # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
+
+    # http://api.mongodb.com/python/current/tutorial.html#documents
+    def query(self, listOfInstruccions):
+        resultadosQuery = []
+        Cities = []
+
+        client = MongoClient('localhost', 27017)
+        db = client.test.wikicity
+        result = db.find()
+
+        for document in result:
+            print(document)
+            resultadosQuery.append(document)
+
+        for i in resultadosQuery:
+            city = City(i["name"])
+            # print(city.name)
+            Cities.append(city)
+
+        return Cities
+
     @property
     def name(self):
         return self._name
@@ -165,52 +199,9 @@ class City:
     file.close()"""
 
 
-
-
-
-def parser(datos):
-    for i in datos:
-        city = City(i["address"]["street"])
-        #print(city.name)
-        Cities.append(city)
-
-
-#Compuebo si existe una City con esos mismo datos
-def save(datos):
-    update = [] #esto ahora es el modifieds de city y de poi
-    for tupla in datos:
-        print(tupla.nameFlag)
-        if(tupla.nameFlag == True):
-            print(tupla.nameFlag)
-            update.append({'name' : tupla.name})
-
-    print(update)
-
-    #dentro del for vamos a iterar sobre id no sobre los atributos de la id
-    #recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
-
-
-
-# http://api.mongodb.com/python/current/tutorial.html#documents
-def query(listOfInstruccions):
-
-    client = MongoClient('localhost', 27017)
-    db = client.test.wikicity
-    result = db.find()
-
-    for document in result:
-        print(document)
-        datosQuery.append(document)
-
-
-
-
-
 #PREGUNTA: como manejar los datos que no conocemos en el parser
 
 #PREGUNTA: No cambia los flags en los setters, no se sabe por que, solucionado en ciudad
-
-#PREGUNTA: Como cargar el wikicity.json, quitar los corchetes y las comas
 
 #PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son de ciudad y el parser va directamente dentro de la funcion query
 
@@ -219,13 +210,12 @@ def query(listOfInstruccions):
 
 
 if __name__ == "__main__":
-    Cities = []
+
+    prueba = City('prueba')
 
     one = [{'$match': {'borough': 'Bronx'}}, {'$project': {'address.street': 1}}]
 
-    datosQuery = []
-
-    query(one)
+    prueba.query(one)
 
     #parser(datosQuery)
 
