@@ -1,6 +1,5 @@
 
-import json
-import pymongo
+from pymongo import MongoClient
 
 # name
 # kind
@@ -14,12 +13,7 @@ class POI:
         self._kind = kind
         self._address = address
         self._geolocation = geolocation
-
-        self.nameFlag = False
-        self.kindFlag = False
-        self.addressFlag = False
-        self.geolocationFlag = False
-
+        self.modfieds = set()
 
     @property
     def name(self):
@@ -42,22 +36,22 @@ class POI:
     @name.setter
     def name(self, name):
         self._name = name
-        self.nameFlag = True
+        self.modfieds.add("name")
 
     @kind.setter
     def kind(self, kind):
         self._kind = kind
-        self.kindFlag = True
+        self.modfieds.add("kind")
 
     @address.setter
     def address(self, address):
         self._address = address
-        self.addressFlag = True
+        self.modfieds.add("address")
 
     @geolocation.setter
     def geolocation(self, geolocation):
         self._geolocation = geolocation
-        self.geolocationFlag = True
+        self.modfieds.add("geolocation")
 
 
 # name
@@ -70,7 +64,7 @@ class POI:
 
 class City:
 
-    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None):
+    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None, **args ):
         self._name = name
         self._province = province
         self._autonomous_community = autonomous_community
@@ -79,15 +73,7 @@ class City:
         self._population = population
         self._geolocation = []
         self._POIs = []
-
-        self.nameFlag = False
-        self.provinceFlag = False
-        self.autonomous_communityFlag = False
-        self.geolocationFlag = False
-        self.areaFlag = False
-        self.elevationFlag = False
-        self.populationFlag = False
-        self.POIsFlag = False
+        self.modfieds=set()
 
     @property
     def name(self):
@@ -126,47 +112,43 @@ class City:
     @name.setter
     def name(self, name):
         self._name = name
-        self.nameFlag = True
+        self.modfieds.add("name")
 
     @province.setter
     def province(self, province):
         self._province = province
-        self.provinceFlag = True
+        self.modfieds.add("province") #hay que tener cuiadado, ya que eso es el dato como esta en base de datos, no como en ciudad, en ciudad seria _province, hay que controlarlo
 
     @autonomous_community.setter
     def autonomous_community(self, autonomous_community):
         self._autonomous_community = autonomous_community
-        self.autonomous_communityFlag = True
+        self.modfieds.add("autonomous_community")
 
     @geolocation.setter
     def geolocation(self, geolocation):
         self._geolocation = geolocation
-        self.geolocationFlag = True
+        self.modfieds.add("geolocation")
 
     @area.setter
     def area(self, area):
         self._area = area
-        self.areaFlag = True
+        self.modfieds.add("area")
 
     @elevation.setter
     def elevation(self, elevation):
         self._elevation = elevation
-        self.elevationFlag = True
+        self.modfieds.add("elevation")
 
     @population.setter
     def population(self, population):
         self._population = population
-        self.populationFlag = True
+        self.modfieds.add("population")
 
     @POIs.setter
     def POIs(self, POIs):
         self._POIs = POIs
-        self.POIsFlag = True
+        self.modfieds.add("POIs")
 
-
-
-
-Cities = []
 
 """with open('wikicity.json','r') as file:
     for i in file:
@@ -184,6 +166,8 @@ Cities = []
 
 
 
+
+
 def parser(datos):
     for i in datos:
         city = City(i["address"]["street"])
@@ -191,13 +175,9 @@ def parser(datos):
         Cities.append(city)
 
 
-        #como manejar los datos que no conocemos
-
-
-
 #Compuebo si existe una City con esos mismo datos
 def save(datos):
-    update = []
+    update = [] #esto ahora es el modifieds de city y de poi
     for tupla in datos:
         print(tupla.nameFlag)
         if(tupla.nameFlag == True):
@@ -206,22 +186,17 @@ def save(datos):
 
     print(update)
 
-
-
-            #dentro del for vamos a iterar sobre id no sobre los atributos de la id
+    #dentro del for vamos a iterar sobre id no sobre los atributos de la id
     #recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
 
 
-one = [ {'$match' : {'borough' : 'Bronx'}} , {'$project' : {'address.street' : 1}} ]
 
-datosQuery = []
 # http://api.mongodb.com/python/current/tutorial.html#documents
 def query(listOfInstruccions):
 
-    from pymongo import MongoClient
     client = MongoClient('localhost', 27017)
-    db = client.test.restaurants
-    result = db.aggregate(listOfInstruccions)
+    db = client.test.wikicity
+    result = db.find()
 
     for document in result:
         print(document)
@@ -229,21 +204,31 @@ def query(listOfInstruccions):
 
 
 
-query(one)
-
-parser(datosQuery)
-
-Cities[0].name = 'prueba'
-
-#No cambia los flags en los setters, no se sabe por que
 
 
+#PREGUNTA: como manejar los datos que no conocemos en el parser
 
-save(Cities)
+#PREGUNTA: No cambia los flags en los setters, no se sabe por que, solucionado en ciudad
 
+#PREGUNTA: Como cargar el wikicity.json, quitar los corchetes y las comas
 
+#PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son de ciudad y el parser va directamente dentro de la funcion query
+
+#PREGUNNTA: podemos utilizar librerias como bson para cambiar los tipos de datos
 
 
 
+if __name__ == "__main__":
+    Cities = []
 
+    one = [{'$match': {'borough': 'Bronx'}}, {'$project': {'address.street': 1}}]
 
+    datosQuery = []
+
+    query(one)
+
+    #parser(datosQuery)
+
+    #Cities[0].name = 'prueba'
+
+    #save(Cities)
