@@ -93,7 +93,8 @@ class City(object):
         # dentro del for vamos a iterar sobre id no sobre los atributos de la id
         # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
 
-    def query(self, listOfInstruccions):
+    @staticmethod
+    def query(listOfInstruccions):
         resultadosQuery = []
         Cities = []
 
@@ -101,13 +102,12 @@ class City(object):
         collection = client.test.wikicity
         result = collection.aggregate(listOfInstruccions)
 
-        for document in result:
+        """for document in result:
             print(document)
             resultadosQuery.append(document)
-
-        print(resultadosQuery[0])
-
-        #PREGUNTA: A la hora de hacer un query solo pillo un resultado, y con next cogo el siguiente? Deberia ser un indice y utilizar next para coger el siguiente
+        """
+        print type(result.next())
+        print result.next()
 
         for i in resultadosQuery:
             city = City(i['autonomous_community'])
@@ -210,17 +210,17 @@ class City(object):
 
 #PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son de ciudad y el parser va directamente dentro de la funcion query
 
-
+#WEB DE REFERENCIA: http://api.mongodb.com/python/current/api/pymongo/command_cursor.html
 
 if __name__ == "__main__":
 
-    prueba = City('prueba')
+    #prueba = City('prueba')
 
-    one = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
+    one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
+    two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
 
-    #ciudades = prueba.query(one)
-    print(prueba.name)
+    ciudades = City.query(one)
 
-    prueba.name = 'cambiado'
+    #prueba.name = 'cambiado'
 
-    prueba.save(one)
+    #prueba.save(one)
