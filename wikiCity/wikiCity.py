@@ -6,6 +6,7 @@ from pymongo import MongoClient
 # direction
 # geolocation
 
+
 class POI(object):
 
     def __init__(self, name, kind=None, address=None, geolocation=None, **args):
@@ -64,7 +65,8 @@ class POI(object):
 
 class City(object):
 
-    def __init__(self, name, province=None, autonomous_community=None, area=None, elevation=None, population=None, **args ):
+    def __init__(self, name, province=None, autonomous_community=None, area=None,
+                 elevation=None, population=None, **args):
         self._name = name
         self._province = province
         self._autonomous_community = autonomous_community
@@ -78,7 +80,6 @@ class City(object):
     # Compuebo si existe una City con esos mismo datos
     def save(self, datos):
 
-
         prueba = self.modfieds.pop()
         print (prueba)
 
@@ -87,34 +88,46 @@ class City(object):
 
         self.modfieds.clear()
 
-        #PREGUNTA: Con que comando subo las cosas a la base de datos y hay diferentes comandos cuando ya existe el objeto en base de datos o no
+        # PREGUNTA: Con que comando subo las cosas a la base de datos y hay diferentes comandos
+        # cuando ya existe el objeto en base de datos o no
         # si el insert para nuevos, update para existentes, chequeo la id para saber cual utilizar
 
         # dentro del for vamos a iterar sobre id no sobre los atributos de la id
-        # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de datos mirando los ids que si se han cambiado
+        # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de
+        # datos mirando los ids que si se han cambiado
 
     @staticmethod
-    def query(listOfInstruccions):
-        resultadosQuery = []
-        Cities = []
+    def query(list_of_instructions):
+        results_query = []
+        cities = []
 
         client = MongoClient('localhost', 27017)
         collection = client.test.wikicity
-        result = collection.aggregate(listOfInstruccions)
+        result = collection.aggregate(list_of_instructions)
 
         """for document in result:
             print(document)
-            resultadosQuery.append(document)
+            results_query.append(document)
         """
         print type(result.next())
         print result.next()
 
-        for i in resultadosQuery:
+        for i in results_query:
             city = City(i['autonomous_community'])
             # print(city.name)
-            Cities.append(city)
+            cities.append(city)
 
-        return Cities
+        return result
+
+    @staticmethod
+    def next(self, result):
+        if isinstance(result.next(), None):
+            return None
+        else:
+            city_dict = result.next()
+            ciudad = City(*city_dict)
+            return ciudad
+
 
     @property
     def name(self):
@@ -204,23 +217,26 @@ class City(object):
     file.close()"""
 
 
-#PREGUNTA: como manejar los datos que no conocemos en el parser, con el **args y el update dinamico
+# PREGUNTA: como manejar los datos que no conocemos en el parser,
+# con el **args y el update dinamico
 
-#PREGUNTA: No cambia los flags en los setters, no se sabe por que, solucionado en ciudad
+# PREGUNTA: No cambia los flags en los setters, no se sabe por
+# que, solucionado en ciudad
 
-#PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son de ciudad y el parser va directamente dentro de la funcion query
+# PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son
+# de ciudad y el parser va directamente dentro de la funcion query
 
-#WEB DE REFERENCIA: http://api.mongodb.com/python/current/api/pymongo/command_cursor.html
+# WEB DE REFERENCIA: http://api.mongodb.com/python/current/api/pymongo/command_cursor.html
 
 if __name__ == "__main__":
 
-    #prueba = City('prueba')
+    # prueba = City('prueba')
 
     one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
 
     ciudades = City.query(one)
 
-    #prueba.name = 'cambiado'
+    # prueba.name = 'cambiado'
 
-    #prueba.save(one)
+    # prueba.save(one)
