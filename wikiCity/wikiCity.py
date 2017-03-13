@@ -98,35 +98,22 @@ class City(object):
 
     @staticmethod
     def query(list_of_instructions):
-        results_query = []
-        cities = []
-
         client = MongoClient('localhost', 27017)
         collection = client.test.wikicity
         result = collection.aggregate(list_of_instructions)
-
-        """for document in result:
-            print(document)
-            results_query.append(document)
-        """
-        print type(result.next())
-        print result.next()
-
-        for i in results_query:
-            city = City(i['autonomous_community'])
-            # print(city.name)
-            cities.append(city)
-
         return result
 
     @staticmethod
-    def next(self, result):
-        if isinstance(result.next(), None):
-            return None
+    def next_result(result):
+        if result.alive:
+            try:
+                city_dict = result.next()
+                res = City(*city_dict)
+                return res
+            except StopIteration:
+                return None
         else:
-            city_dict = result.next()
-            ciudad = City(*city_dict)
-            return ciudad
+            return None
 
 
     @property
@@ -201,22 +188,6 @@ class City(object):
         self._POIs = POIs
         self.modfieds.add("POIs")
 
-
-"""with open('wikicity.json','r') as file:
-    for i in file:
-        data = json.loads(i)
-    for i in data:
-        city = City(i["name"], i["province"], i["autonomous_community"], i["area"], i["elevation"], i["population"])
-        for j in i["location"]["coordinates"]:
-            city.geolocation.append(j)
-        for j in i["POI"]:
-            punto = POI(j["name"], j["kind"])
-            city.POIs.append(POI)
-
-        Cities.append(city)
-    file.close()"""
-
-
 # PREGUNTA: como manejar los datos que no conocemos en el parser,
 # con el **args y el update dinamico
 
@@ -235,8 +206,12 @@ if __name__ == "__main__":
     one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
 
-    ciudades = City.query(one)
+    cities = City.query(one)
+    cities_result = []
+    while City.next_result(cities) is not None:
+        cities_result.append(cities)
 
-    # prueba.name = 'cambiado'
+    for x in cities_result:
+        print x.name
 
-    # prueba.save(one)
+
