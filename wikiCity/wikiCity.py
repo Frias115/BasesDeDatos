@@ -114,20 +114,9 @@ class City(object):
         else:
             return None
 
-# PREGUNTA: como manejar los datos que no conocemos en el parser,
-# con el **args y el update dinamico
-
-# PREGUNTA: No cambia los flags en los setters, no se sabe por
-# que, solucionado en ciudad
-
-# PREGUNTA: Tienen buena pinta las estrucutas iniciales, si, pero query y save son
-# de ciudad y el parser va directamente dentro de la funcion query
-
 # WEB DE REFERENCIA: http://api.mongodb.com/python/current/api/pymongo/command_cursor.html
 
 if __name__ == "__main__":
-
-    # prueba = City('prueba')
 
     one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
@@ -139,6 +128,3 @@ if __name__ == "__main__":
     city.set_attribute('name', 'prueba')
 
     print city.modfieds
-
-
-
