@@ -65,24 +65,22 @@ class POI(object):
 
 class City(object):
 
-    def __init__(self, name, province=None, autonomous_community=None, area=None,
-                 elevation=None, population=None, **args):
-        self._name = name
-        self._province = province
-        self._autonomous_community = autonomous_community
-        self._area = area
-        self._elevation = elevation
-        self._population = population
-        self._geolocation = []
-        self._POIs = []
+    def __init__(self, initial_data):
+        for key in initial_data:
+            setattr(self, key, initial_data[key])
         self.modfieds=set()
+
+    def set_attribute(self, key, value):
+        self.__dict__[key] = value
+        self.modfieds.add(str(key))
+
+    def get_attribute(self, key):
+        return self.__dict__[key]
 
     # Compuebo si existe una City con esos mismo datos
     def save(self, datos):
-
         prueba = self.modfieds.pop()
         print (prueba)
-
         for i in self.modfieds:
             print('a')
 
@@ -108,85 +106,13 @@ class City(object):
         if result.alive:
             try:
                 city_dict = result.next()
-                res = City(*city_dict)
+                res = City(city_dict)
+                print res.get_attribute('name')
                 return res
             except StopIteration:
                 return None
         else:
             return None
-
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def province(self):
-        return self._province
-
-    @property
-    def autonomous_community(self):
-        return self._autonomous_community
-
-    @property
-    def geolocation(self):
-        return self._geolocation
-
-    @property
-    def area(self):
-        return self._area
-
-    @property
-    def elevation(self):
-        return self._elevation
-
-    @property
-    def population(self):
-        return self._population
-
-    @property
-    def POIs(self):
-        return self._POIs
-
-    @name.setter
-    def name(self, val):
-        self.modfieds.add('name')
-        self._name = val
-
-    @province.setter
-    def province(self, province):
-        self._province = province
-        self.modfieds.add("province") #hay que tener cuiadado, ya que eso es el dato como esta en base de datos, no como en ciudad, en ciudad seria _province, hay que controlarlo
-
-    @autonomous_community.setter
-    def autonomous_community(self, autonomous_community):
-        self._autonomous_community = autonomous_community
-        self.modfieds.add("autonomous_community")
-
-    @geolocation.setter
-    def geolocation(self, geolocation):
-        self._geolocation = geolocation
-        self.modfieds.add("geolocation")
-
-    @area.setter
-    def area(self, area):
-        self._area = area
-        self.modfieds.add("area")
-
-    @elevation.setter
-    def elevation(self, elevation):
-        self._elevation = elevation
-        self.modfieds.add("elevation")
-
-    @population.setter
-    def population(self, population):
-        self._population = population
-        self.modfieds.add("population")
-
-    @POIs.setter
-    def POIs(self, POIs):
-        self._POIs = POIs
-        self.modfieds.add("POIs")
 
 # PREGUNTA: como manejar los datos que no conocemos en el parser,
 # con el **args y el update dinamico
@@ -207,11 +133,12 @@ if __name__ == "__main__":
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
 
     cities = City.query(one)
-    cities_result = []
-    while City.next_result(cities) is not None:
-        cities_result.append(cities)
 
-    for x in cities_result:
-        print x.name
+    city = City.next_result(cities)
+
+    city.set_attribute('name', 'prueba')
+
+    print city.modfieds
+
 
 
