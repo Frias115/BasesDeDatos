@@ -10,50 +10,19 @@ from pymongo import MongoClient
 
 class POI(object):
 
-    def __init__(self, name, kind=None, address=None, geolocation=None, **args):
-        self._name = name
-        self._kind = kind
-        self._address = address
-        self._geolocation = geolocation
-        self.modfieds = set()
+    def __init__(self, initial_data):
+        essential = ['name', 'kind', 'direction', 'geolocation']
 
-    @property
-    def name(self):
-        return self._name
+        for key in initial_data:
+            setattr(self, key, initial_data[key])
 
-    @property
-    def kind(self):
-        return self._kind
+        self.modifieds = set()
 
-    @property
-    def address(self):
-        return self._address
+        [setattr(self, key, None) for key in essential if key not in self.__dict__]
 
-    @property
-    def geolocation(self):
-        return self._geolocation
-
-
-
-    @name.setter
-    def name(self, name):
-        self._name = name
-        self.modfieds.add("name")
-
-    @kind.setter
-    def kind(self, kind):
-        self._kind = kind
-        self.modfieds.add("kind")
-
-    @address.setter
-    def address(self, address):
-        self._address = address
-        self.modfieds.add("address")
-
-    @geolocation.setter
-    def geolocation(self, geolocation):
-        self._geolocation = geolocation
-        self.modfieds.add("geolocation")
+    def update_attribute(self, key, value):
+        self.__dict__[key] = value
+        self.modifieds.add(str(key))
 
 
 # name
@@ -66,7 +35,6 @@ class POI(object):
 
 class City(object):
 
-
     def __init__(self, initial_data):
         essential = ['name', 'province', 'autonomous_community', 'geolocation', 'area', 'elevation', 'population']
 
@@ -76,8 +44,6 @@ class City(object):
         self.modifieds=set()
 
         [setattr(self, key, None) for key in essential if key not in self.__dict__]
-
-
 
         # for key in essential:
         #   if key not in self.__dict__:
@@ -137,9 +103,14 @@ class City(object):
         except errors.ConnectionFailure as e:
             print "Something went wrong: " % e
 
+
+ # PREGUNTAS
+ # Preguntar si POI deberia tener modifieds
+ # Como hacer que la funcion update_attribute se pueda llamar por las dos clases.
  # Usar la clase poi
  # tener en cuenta que save no guarde algo no modificado
  # hacer las querys
+ # como aplicar lo del formato geojson y indexado 2dsphere
 
 
     @staticmethod
@@ -185,13 +156,8 @@ if __name__ == "__main__":
 
     print city2.__dict__
 
-    cityNueva = City({'name' : 'Madrid'})
+    nuevo_poi = POI({'name': 'kind'})
 
-    cityNueva.save_in_database()
+    for x in nuevo_poi.__dict__:
+        print x
 
-
-    queryprueba = City.query(three)
-
-    prueba = City.next_result(queryprueba)
-
-    print prueba.name
