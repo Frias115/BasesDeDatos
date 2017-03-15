@@ -1,4 +1,5 @@
-
+import pymongo
+from pymongo import errors
 from pymongo import MongoClient
 
 # name
@@ -65,26 +66,35 @@ class POI(object):
 
 class City(object):
 
+
     def __init__(self, initial_data):
+        essential = ['name', 'province', 'autonomous_community', 'geolocation', 'area', 'elevation', 'population']
+
         for key in initial_data:
             setattr(self, key, initial_data[key])
-        self.modfieds=set()
 
-    def set_attribute(self, key, value):
+        self.modifieds=set()
+
+        [setattr(self, key, None) for key in essential if key not in self.__dict__]
+
+
+
+        # for key in essential:
+        #   if key not in self.__dict__:
+        #      setattr(self, key, None)
+
+    def update_attribute(self, key, value):
         self.__dict__[key] = value
-        self.modfieds.add(str(key))
-
-    def get_attribute(self, key):
-        return self.__dict__[key]
+        self.modifieds.add(str(key))
 
     # Compuebo si existe una City con esos mismo datos
     def save(self, datos):
-        prueba = self.modfieds.pop()
+        prueba = self.modifieds.pop()
         print (prueba)
-        for i in self.modfieds:
+        for i in self.modifieds:
             print('a')
 
-        self.modfieds.clear()
+        self.modifieds.clear()
 
         # PREGUNTA: Con que comando subo las cosas a la base de datos y hay diferentes comandos
         # cuando ya existe el objeto en base de datos o no
@@ -93,6 +103,42 @@ class City(object):
         # dentro del for vamos a iterar sobre id no sobre los atributos de la id
         # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de
         # datos mirando los ids que si se han cambiado
+
+
+    # En la version dinamica seria necesario un metodo update que
+    # permita modificar los atributos una vez se haya creado el objeto y anada un flag de modificado.
+    #
+    # Viendo vuestro codigo he visto que utilizais un metodo get_attribute para obtener los parametros.
+    # Tened en cuenta que si habeis utilizado el metodo update de __dict__ en el constructor, las variables
+    # pertenecen al objeto y podeis acceder directamente (res.name). Si utilizamos el update es porque queremos
+    # poder realizar comprobaciones y activar el flag de modificacion.
+
+    # - Realizarlo de forma estatica definiendo en el constructor cada atributo y realizar la mismas comprobaciones que antes.
+    # En este caso no seria necesario metodo update pero si definir los getters y setters para cada atributo
+
+
+    def save_in_database(self):
+        client = MongoClient('localhost', 27017)
+        collection = client.test.wikicity
+        try:
+            if self.__dict__.has_key('_id'):
+                changes = {}
+                for x in self.modifieds:
+                    changes[x] = self.__dict__.get(x)
+                    print x
+                    print self.__dict__.get(x)
+                id = {}
+                id['_id'] = self.__dict__.get('_id')
+                print id
+                collection.update_one( id, { '$set' : changes})
+           # else:
+                # collection.insert(self._id, self.changes)
+            print "Succesful"
+        except errors.ConnectionFailure as e:
+            print "Something went wrong: " % e
+
+
+
 
     @staticmethod
     def query(list_of_instructions):
@@ -107,7 +153,6 @@ class City(object):
             try:
                 city_dict = result.next()
                 res = City(city_dict)
-                print res.get_attribute('name')
                 return res
             except StopIteration:
                 return None
@@ -125,6 +170,14 @@ if __name__ == "__main__":
 
     city = City.next_result(cities)
 
-    city.set_attribute('name', 'prueba')
+    print (city.__dict__.get('_id'))
 
-    print city.modfieds
+    city.update_attribute('name', 'prueba')
+
+    city.save_in_database()
+
+    cities = City.query(one)
+
+    city2 = City.next_result(cities)
+
+    print city2.name
