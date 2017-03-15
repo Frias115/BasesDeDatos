@@ -121,23 +121,25 @@ class City(object):
         client = MongoClient('localhost', 27017)
         collection = client.test.wikicity
         try:
-            if self.__dict__.has_key('_id'):
+            if self.__dict__.has_key('_id') and self.modifieds.__len__() is not 0:
+                print (self.modifieds.__len__())
                 changes = {}
                 for x in self.modifieds:
                     changes[x] = self.__dict__.get(x)
-                    print x
-                    print self.__dict__.get(x)
                 id = {}
                 id['_id'] = self.__dict__.get('_id')
-                print id
                 collection.update_one( id, { '$set' : changes})
-           # else:
-                # collection.insert(self._id, self.changes)
+            elif not self.__dict__.has_key('_id'):
+                dict = self.__dict__
+                dict.pop('modifieds')
+                collection.insert_one(dict)
             print "Succesful"
         except errors.ConnectionFailure as e:
             print "Something went wrong: " % e
 
-
+ # Usar la clase poi
+ # tener en cuenta que save no guarde algo no modificado
+ # hacer las querys
 
 
     @staticmethod
@@ -165,6 +167,7 @@ if __name__ == "__main__":
 
     one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
+    three = [{'$match': {'name': 'Madrid'}}, {'$project': {'name': 1}}]
 
     cities = City.query(one)
 
@@ -180,4 +183,15 @@ if __name__ == "__main__":
 
     city2 = City.next_result(cities)
 
-    print city2.name
+    print city2.__dict__
+
+    cityNueva = City({'name' : 'Madrid'})
+
+    cityNueva.save_in_database()
+
+
+    queryprueba = City.query(three)
+
+    prueba = City.next_result(queryprueba)
+
+    print prueba.name
