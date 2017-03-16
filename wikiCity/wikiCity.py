@@ -24,7 +24,6 @@ class POI(object):
         self.__dict__[key] = value
         self.modifieds.add(str(key))
 
-
 # name
 # province
 # autonomous_community
@@ -53,36 +52,6 @@ class City(object):
         self.__dict__[key] = value
         self.modifieds.add(str(key))
 
-    # Compuebo si existe una City con esos mismo datos
-    def save(self, datos):
-        prueba = self.modifieds.pop()
-        print (prueba)
-        for i in self.modifieds:
-            print('a')
-
-        self.modifieds.clear()
-
-        # PREGUNTA: Con que comando subo las cosas a la base de datos y hay diferentes comandos
-        # cuando ya existe el objeto en base de datos o no
-        # si el insert para nuevos, update para existentes, chequeo la id para saber cual utilizar
-
-        # dentro del for vamos a iterar sobre id no sobre los atributos de la id
-        # recorrer toda la lista de ciudades, comprobar booleanos de city y actualizar la base de
-        # datos mirando los ids que si se han cambiado
-
-
-    # En la version dinamica seria necesario un metodo update que
-    # permita modificar los atributos una vez se haya creado el objeto y anada un flag de modificado.
-    #
-    # Viendo vuestro codigo he visto que utilizais un metodo get_attribute para obtener los parametros.
-    # Tened en cuenta que si habeis utilizado el metodo update de __dict__ en el constructor, las variables
-    # pertenecen al objeto y podeis acceder directamente (res.name). Si utilizamos el update es porque queremos
-    # poder realizar comprobaciones y activar el flag de modificacion.
-
-    # - Realizarlo de forma estatica definiendo en el constructor cada atributo y realizar la mismas comprobaciones que antes.
-    # En este caso no seria necesario metodo update pero si definir los getters y setters para cada atributo
-
-
     def save_in_database(self):
         client = MongoClient('localhost', 27017)
         collection = client.test.wikicity
@@ -95,6 +64,8 @@ class City(object):
                 id = {}
                 id['_id'] = self.__dict__.get('_id')
                 collection.update_one( id, { '$set' : changes})
+                self.modifieds.clear()
+
             elif not self.__dict__.has_key('_id'):
                 dict = self.__dict__
                 dict.pop('modifieds')
@@ -107,10 +78,13 @@ class City(object):
  # PREGUNTAS
  # Preguntar si POI deberia tener modifieds
  # Como hacer que la funcion update_attribute se pueda llamar por las dos clases.
+ # como aplicar lo del formato geojson y indexado 2dsphere
+
+ # TAREAS
  # Usar la clase poi
  # tener en cuenta que save no guarde algo no modificado
  # hacer las querys
- # como aplicar lo del formato geojson y indexado 2dsphere
+ # Simplificar el codigo que se ha repetido varias veces
 
 
     @staticmethod
