@@ -2,21 +2,35 @@ import pymongo
 from pymongo import errors
 from pymongo import MongoClient
 
+class DBConecction:
+
+    client = None
+
+    @staticmethod
+    def db_connect():
+        DBConecction.client = MongoClient('localhost', 27017)
+        collection = DBConecction.client.wikicity.wikicity
+
+        collection.create_index([('location.coordinates',pymongo.GEOSPHERE)])
+
+        return collection
+
+    @staticmethod
+    def db_close():
+        DBConecction.client.close()
+
+
 # name
 # kind
-# direction
-# geolocation
-
+# score
+# avg_price
 
 class POI(object):
 
     def __init__(self, initial_data):
-        essential = ['name', 'kind', 'direction', 'geolocation']
+        essential = ['name', 'kind', 'score', 'avg_price']
 
-        for key in initial_data:
-            setattr(self, key, initial_data[key])
-
-        self.modifieds = set()
+        self.__dict__.update(initial_data)
 
         [setattr(self, key, None) for key in essential if key not in self.__dict__]
 
@@ -27,38 +41,48 @@ class POI(object):
 # name
 # province
 # autonomous_community
-# geolocation
+# location
 # area
 # elevation
 # population
+# POI
 
 class City(object):
 
     def __init__(self, initial_data):
-        essential = ['name', 'province', 'autonomous_community', 'geolocation', 'area', 'elevation', 'population']
+        essential = ['name', 'province', 'autonomous_community', 'location', 'area', 'elevation', 'population', 'POI']
 
-        for key in initial_data:
-            setattr(self, key, initial_data[key])
+        self.__dict__.update(initial_data)
 
         self.modifieds=set()
 
         [setattr(self, key, None) for key in essential if key not in self.__dict__]
 
-        # for key in essential:
-        #   if key not in self.__dict__:
-        #      setattr(self, key, None)
+        if self.__dict__.get('location') is None:
+            setattr(self, 'location', {"type": "Point", "coordinates": [0,0]})
+
+
+        if self.__dict__.get('POI') is not None:
+            newPOI = []
+            for x in self.__dict__.get('POI'):
+                if type(x) is not dict:
+                    newPOI.append(x.__dict__)
+                else:
+                    newPOI.append(x)
+
+            setattr(self, 'POI', newPOI)
+
 
     def update_attribute(self, key, value):
         self.__dict__[key] = value
         self.modifieds.add(str(key))
 
     def save_in_database(self):
-        client = MongoClient('localhost', 27017)
-        collection = client.test.wikicity
+        collection = DBConecction.db_connect()
         try:
             if self.__dict__.has_key('_id') and self.modifieds.__len__() is not 0:
                 print (self.modifieds.__len__())
-                changes = {}
+                changes = {} # comprensive dict
                 for x in self.modifieds:
                     changes[x] = self.__dict__.get(x)
                 id = {}
@@ -74,24 +98,16 @@ class City(object):
         except errors.ConnectionFailure as e:
             print "Something went wrong: " % e
 
-
- # PREGUNTAS
- # Preguntar si POI deberia tener modifieds
- # Como hacer que la funcion update_attribute se pueda llamar por las dos clases.
- # como aplicar lo del formato geojson y indexado 2dsphere
+        DBConecction.db_close()
 
  # TAREAS
- # Usar la clase poi
- # tener en cuenta que save no guarde algo no modificado
  # hacer las querys
- # Simplificar el codigo que se ha repetido varias veces
-
 
     @staticmethod
     def query(list_of_instructions):
-        client = MongoClient('localhost', 27017)
-        collection = client.test.wikicity
+        collection = DBConecction.db_connect()
         result = collection.aggregate(list_of_instructions)
+        DBConecction.db_close()
         return result
 
     @staticmethod
@@ -110,28 +126,33 @@ class City(object):
 
 if __name__ == "__main__":
 
-    one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1}}]
+    one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1, 'location' : 1, 'POI' : 1}}]
     two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
     three = [{'$match': {'name': 'Madrid'}}, {'$project': {'name': 1}}]
+    four = [{'$match': {'location.coordinates': [0,0]}}, {'$project': {'location': 1}}]
+
+
+    list = []
+
+    print type(list)
 
     cities = City.query(one)
 
     city = City.next_result(cities)
 
-    print (city.__dict__.get('_id'))
+    print city.name
 
-    city.update_attribute('name', 'prueba')
+    poiprueba = POI({'name' : 'prueba1'})
 
-    city.save_in_database()
+    poiprueba2 = POI({'name' : 'prueba2'})
 
-    cities = City.query(one)
+    prueba2 = City({'name' : 'probando', 'POI' : [poiprueba, poiprueba2, poiprueba]})
 
-    city2 = City.next_result(cities)
+    print prueba2.__dict__
 
-    print city2.__dict__
 
-    nuevo_poi = POI({'name': 'kind'})
-
-    for x in nuevo_poi.__dict__:
-        print x
-
+# Crear una ciudad
+# Guardar
+# modificar ciudad
+# guardar
+# query
