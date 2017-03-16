@@ -10,3 +10,5 @@ db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}}, {
 4. Tipos de puntos de interés existentes en una ciudad especificada y el número de puntos de interés de cada tipo.
 NO ACABADA, FALTA HACER QUE SOLO SALGA UNA VEZ CADA TIPO Y EL NUMERO DE VECES QUE APARECEN
 db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$project : {'POI.kind': 1}}, {$group : {"_id": '$POI.kind'}}])
+
+db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$group : {"_id": '$POI.kind', count : {$sum : 1}}}])
