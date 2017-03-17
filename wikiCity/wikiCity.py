@@ -62,9 +62,19 @@ class City(object):
             setattr(self, 'location', {"type": "Point", "coordinates": [0,0]})
 
 
+
         if self.__dict__.get('POI') is not None:
+
+            POI_list = None
+
+            if isinstance(self.__dict__.get('POI'), list):
+                POI_list = self.__dict__.get('POI')
+            else:
+                POI_list = []
+                POI_list.append(self.__dict__.get('POI'))
+
             newPOI = []
-            for x in self.__dict__.get('POI'):
+            for x in POI_list:
                 if type(x) is not dict:
                     newPOI.append(x.__dict__)
                 else:
@@ -81,7 +91,6 @@ class City(object):
         collection = DBConecction.db_connect()
         try:
             if self.__dict__.has_key('_id') and self.modifieds.__len__() is not 0:
-                print (self.modifieds.__len__())
                 changes = {} # comprensive dict
                 for x in self.modifieds:
                     changes[x] = self.__dict__.get(x)
@@ -132,21 +141,15 @@ if __name__ == "__main__":
     four = [{'$match': {'location.coordinates': [0,0]}}, {'$project': {'location': 1}}]
 
 
-    list = []
-
-    print type(list)
-
     cities = City.query(one)
 
     city = City.next_result(cities)
-
-    print city.name
 
     poiprueba = POI({'name' : 'prueba1'})
 
     poiprueba2 = POI({'name' : 'prueba2'})
 
-    prueba2 = City({'name' : 'probando', 'POI' : [poiprueba, poiprueba2, poiprueba]})
+    prueba2 = City({'name' : 'probando', 'POI' : poiprueba})
 
     print prueba2.__dict__
 
