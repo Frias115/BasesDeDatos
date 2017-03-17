@@ -2,6 +2,7 @@ import pymongo
 from pymongo import errors
 from pymongo import MongoClient
 
+
 class DBConecction:
 
     client = None
@@ -58,11 +59,11 @@ class City(object):
 
         [setattr(self, key, None) for key in essential if key not in self.__dict__]
 
+        #default por si no hay un location con la estructura de un punto 2dSphere
         if self.__dict__.get('location') is None:
             setattr(self, 'location', {"type": "Point", "coordinates": [0,0]})
 
-
-
+        #convierte listas de POI en diccionarios para poder guardarlos correctamente
         if self.__dict__.get('POI') is not None:
 
             POI_list = None
@@ -91,7 +92,7 @@ class City(object):
         collection = DBConecction.db_connect()
         try:
             if self.__dict__.has_key('_id') and self.modifieds.__len__() is not 0:
-                changes = {} # comprensive dict
+                changes = {}
                 for x in self.modifieds:
                     changes[x] = self.__dict__.get(x)
                 id = {}
@@ -108,9 +109,6 @@ class City(object):
             print "Something went wrong: " % e
 
         DBConecction.db_close()
-
- # TAREAS
- # hacer las querys
 
     @staticmethod
     def query(list_of_instructions):
@@ -131,31 +129,37 @@ class City(object):
         else:
             return None
 
-# WEB DE REFERENCIA: http://api.mongodb.com/python/current/api/pymongo/command_cursor.html
-
 if __name__ == "__main__":
 
-    one = [{'$match': {'location.type': 'Point'}}, {'$project': {'name': 1, 'location' : 1, 'POI' : 1}}]
-    two = [{'$match': {'province': 'Zamora'}}, {'$project': {'autonomous_community': 1}}]
-    three = [{'$match': {'name': 'Madrid'}}, {'$project': {'name': 1}}]
-    four = [{'$match': {'location.coordinates': [0,0]}}, {'$project': {'location': 1}}]
+    find = [{'$match': {'name': 'Madrid'}}, {'$project': {'name': 1}}]
+
+    # Crear una ciudad
+    u_tad = POI({"name": "u-tad", "kind": "University", "score": 5, "avg_price": 10000})
+    madrid = City({"name": "Madrid", "province": "Madrid", "autonomous_community": "Madrid", "area": 605770000, "elevation": 657, "population": 3165541, "POI": u_tad})
+
+    # Guardar
+    madrid.save_in_database()
+
+    # modificar ciudad
+    query_result = City.query(find)
+    new_city = City.next_result(query_result)
+    new_city.update_attribute("name", "Madriz")
+
+    # guardar
+    new_city.save_in_database()
+
+    # query
+    primera = [{'$match': {'autonomous_community': 'Castilla y Leon'}}, {'$project': {'name': 1}}]
+    segunda = [{'$match': {'autonomous_community': 'Castilla y Leon'}}, {'$group': {"_id": '$_id', 'media_elevation': {"$avg": '$elevation'}}}]
+    tercera = [{'$match': {'autonomous_community': 'Castilla y Leon'}}, {'$group': {"_id": '$_id', 'media_elevation': {"$avg": '$population'}}}]
+    cuarta = [{'$match': {'name': 'Leon'}}, {'$group': {"_id": '$POI.kind', 'count': {'$sum': 1}}}, {'$unwind': '$_id'}, {'$group': {"_id": '$_id', 'count': {"$sum": 1}}}]
+    quinta = [{'$unwind': '$POI'}, {'$group': {"_id": {"name": '$name', "kind": '$POI.kind'}}}]
+    sexta = [{'$match': {'name': 'Leon'}}, {'$unwind': '$POI'}, {'$match': {'POI.kind': 'Restaurant'}}, {'$group': {"_id": {"name": '$name', "kind": '$POI.kind'}, "minimumPrice": {"$min": '$POI.avg_price'}, "averagePrice": {'$avg': '$POI.avg_price'}, "maxPrice": {"$max": '$POI.avg_price'}}}]
+    septima = [{'$geoNear': {'near': {'type': "Point", 'coordinates': [40,-5]}, 'distanceField': "dist.calculated", 'spherical': True}}, {'$unwind': '$POI'}, {'$match': {'POI.kind': 'Restaurant'}}, {'$sort': {"dist.calculated": -1}}, {'$group': {"_id": {"name": '$name', "kind": '$POI.kind', "distance": '$dist.calculated'}}}]
+    octava = [{'$geoNear': {'near': {'type': "Point", 'coordinates': [40,-5]}, 'distanceField': "dist.calculated", 'maxDistance': 10000000, 'num': 5, 'spherical': 'true'}}, { '$unwind': '$POI'}, {'$match': {'POI.kind': 'Restaurant'}}, {'$sort': {"dist.calculated" : -1}}, {'$group': {"_id": {"name": '$name', "kind": '$POI.kind', "distance": '$dist.calculated'}}}]
+    novena = [{'$match': {"name": {'$in':['Leon', 'Burgos']}}}, {'$unwind': '$POI'}, {'$match': {'POI.kind': 'Restaurant'}}, {'$match': {"POI.kind": 'Restaurant'}}, {'$group': {"_id": {"name": "$name", "POI.kind": '$POI.kind', "POI.name" : "$POI.name"}}}]
+    decima = [{'$unwind': '$POI'}, {'$group': {"_id": {"name": '$name', "score": '$POI.score'}}}, {'$sort': {"_id.score": -1}}]
+    onceava = [{'$unwind': '$POI'}, {'$match': {'POI.kind': 'Restaurant'}}, {'$group': {"_id": { "kind": '$POI.kind', 'name': '$POI.name'}, 'count': {"$sum": 1}}}, {'$sort': {"count" : -1}}, {'$limit' : 5}]
 
 
-    cities = City.query(one)
-
-    city = City.next_result(cities)
-
-    poiprueba = POI({'name' : 'prueba1'})
-
-    poiprueba2 = POI({'name' : 'prueba2'})
-
-    prueba2 = City({'name' : 'probando', 'POI' : poiprueba})
-
-    print prueba2.__dict__
-
-
-# Crear una ciudad
-# Guardar
-# modificar ciudad
-# guardar
-# query
+    query = City.query(primera)
