@@ -8,7 +8,28 @@ db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}}, {
 db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}}, {$group : {"_id": null, media_elevation : {"$avg" : '$population'}}} ])
 
 4. Tipos de puntos de interés existentes en una ciudad especificada y el número de puntos de interés de cada tipo.
-NO ACABADA, FALTA HACER QUE SOLO SALGA UNA VEZ CADA TIPO Y EL NUMERO DE VECES QUE APARECEN
-db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$project : {'POI.kind': 1}}, {$group : {"_id": '$POI.kind'}}])
+db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$group : {"_id": '$POI.kind', count : {$sum : 1}}}, { $unwind: '$_id' }, {$group : {"_id": '$_id', count : {"$sum": 1}}}])
 
-db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$group : {"_id": '$POI.kind', count : {$sum : 1}}}])
+5. Tipos de puntos de interés por ciudad. No puede haber repeticiones.
+db.wikicity.aggregate([ { $unwind: '$POI' }, {$group : {"_id": { "name": '$name', "kind" : '$POI.kind'}}}])
+
+6. Precio mínimo, medio y máximo de los puntos de interés de un tipo especificado en una ciudad especificada.
+db.wikicity.aggregate([ {$match :{'name': 'Leon'}},     { $unwind: '$POI'},  {$match :{'POI.kind': 'Restaurant'}},  {$group : {"_id": {"name": '$name', "kind": '$POI.kind'}, "minimumPrice" : {"$min": '$POI.avg_price'}, "averagePrice" : {$avg: '$POI.avg_price'}, "maxPrice": {"$max": '$POI.avg_price'} }}])
+
+7. Puntos de interés de un tipo especificado cercanos a la posición especificada ordenadas por cercanía.
+db.wikicity.aggregate([{$geoNear:{near:{type: "Point", coordinates: [40,-5]}, distanceField: "dist.calculated", spherical: true}}, { $unwind: '$POI'},  {$match :{'POI.kind': 'Restaurant'}}, { $sort : { "dist.calculated" : -1} },  {$group : {"_id": {"name": '$name', "kind": '$POI.kind', "distance": '$dist.calculated'}}}])
+
+8. Cinco primeros puntos de interés de un tipo especificado en un radio especificado.
+db.wikicity.aggregate([{$geoNear:{near:{type: "Point", coordinates: [40,-5]}, distanceField: "dist.calculated", maxDistance: 10000000, num: 5, spherical: true}}, { $unwind: '$POI'},  {$match :{'POI.kind': 'Restaurant'}}, { $sort : { "dist.calculated" : -1} },  {$group : {"_id": {"name": '$name', "kind": '$POI.kind', "distance": '$dist.calculated'}}}])
+
+9. Puntos de interés de un tipo especificado que esté en dos ciudades diferentes. Se deberá mostrar un listado de las ciudades donde esta cada establecimiento.
+db.wikicity.aggregate([ {$match :  {"name" : {$in:[     'Leon', 'Burgos'    ]}}},  { $unwind: '$POI'},  {$match :{'POI.kind': 'Restaurant'}},  {$match : {"POI.kind" : 'Restaurant'}},   {$group : {"_id": {"name" : "$name", "POI.kind": '$POI.kind', "POI.name" : "$POI.name"}}}])
+
+
+10. Crear una colección con el listado de los tres puntos de interés mejor valorados de cada una de las ciudades existentes en la base de datos.
+db.wikicity.aggregate([ { $unwind: '$POI' }, {$group : {"_id": { "name": '$name', "score" : '$POI.score'}}}, { $sort : { "_id.score" : -1} }])
+FALTA LIMITAR A LOS TRES MEJORES POI's POR CIUDAD
+
+
+11. Listado de los cinco puntos de interés de un tipo especificado con mayor presencia en España ordenados por número total.
+db.wikicity.aggregate([ { $unwind: '$POI' }, {$match :{'POI.kind': 'Restaurant'}}, {$group : {"_id": { "kind" : '$POI.kind', 'name' : '$POI.name'}, count : {"$sum": 1}}}, { $sort : { "count" : -1} }, {$limit : 5}])
