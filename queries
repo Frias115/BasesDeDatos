@@ -1,0 +1,14 @@
+1. Listado de los nombres de las ciudades de una comunidad autónoma consultada.
+db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}},   {$project : {'name': 1}} ])
+
+2. Altitud media de las ciudades de una comunidad autónoma consultada.
+db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}}, {$group : {"_id": null, media_elevation : {"$avg" : '$elevation'}}} ])
+
+3. Densidad media de las ciudades de una comunidad autónoma.
+db.wikicity.aggregate([ {$match :{'autonomous_community': 'Castilla y Leon'}}, {$group : {"_id": null, media_elevation : {"$avg" : '$population'}}} ])
+
+4. Tipos de puntos de interés existentes en una ciudad especificada y el número de puntos de interés de cada tipo.
+NO ACABADA, FALTA HACER QUE SOLO SALGA UNA VEZ CADA TIPO Y EL NUMERO DE VECES QUE APARECEN
+db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$project : {'POI.kind': 1}}, {$group : {"_id": '$POI.kind'}}])
+
+db.wikicity.aggregate([ {$match :{'name': 'Leon'}}, {$group : {"_id": '$POI.kind', count : {$sum : 1}}}])
