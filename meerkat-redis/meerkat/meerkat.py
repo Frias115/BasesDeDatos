@@ -1,17 +1,16 @@
 import redis
 import random
+import time
+from threading import Thread
+my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
-r = redis.Redis(connection_pool=pool)
 
-def getVariable(variable_name):
-    my_server = redis.Redis(connection_pool=pool)
+def get_variable(variable_name):
     response = my_server.get(variable_name)
-
     return response
 
-def setVariable(variable_name, variable_value = None):
-    my_server = redis.Redis(connection_pool=pool)
+
+def set_variable(variable_name, variable_value=None):
     my_server.set(variable_name, variable_value)
 
 
@@ -63,73 +62,83 @@ tambien se debe permitir especificar si estan activas o no.
 
 """
 
-def setUser(username = None, password = None):
 
-    my_server = redis.Redis(connection_pool=pool)
+def set_user(username=None, password=None):
+
     if not my_server.exists('ID'):
-        setVariable('ID', 0)
+        set_variable('ID', 0)
 
-    ID = getVariable('ID');
+    ID = get_variable('ID')
 
-    setVariable(ID, ID)
-    setVariable(str(ID) + '.username' , username)
-    setVariable(str(ID) + '.password' , password)
+    set_variable(ID, ID)
+    set_variable(str(ID) + '.username', username)
+    set_variable(str(ID) + '.password', password)
     #Cookie
-    setVariable(str(ID) + '.cookie' , random.randint(0, 99999))
+    set_variable(str(ID) + '.cookie', random.randint(0, 99999))
     my_server.expire(str(ID) + '.cookie', 604800)
-
 
     my_server.incr('ID')
 
-def addFollower(ID, *list_of_follower_IDs):
-    my_server = redis.Redis(connection_pool=pool)
+
+def add_follower(ID, *list_of_follower_IDs):
 
     my_server.sadd(str(ID) + '.followers', list_of_follower_IDs)
 
-    my_server.pubsub(list_of_follower_IDs)
 
-def addToFollowing(ID, *list_of_IDs_to_follow):
-    my_server = redis.Redis(connection_pool=pool)
+def add_to_following(ID, *list_of_IDs_to_follow):
 
     my_server.sadd(str(ID) + '.following', list_of_IDs_to_follow)
 
-def notifyStreaming(ID):
-    my_server = redis.Redis(connection_pool=pool)
 
-    my_server.publish(ID, 'I started streaming, join me!')
+def notify_streaming(ID):
+    time.sleep(2)
+    print "Hola?"
+    subscription = my_server.pubsub()
+
+    # subscription.subscribe(0)
+
+    my_server.publish(str(ID), 'I started streaming, join me!')
+
+    # subscription.close()
 
 
+def get_messages_for_id(ID):
+    print "Me estoy ejecutando"
+    subscription = my_server.pubsub()
+    subscription.subscribe(str(ID))
+
+    while True:
+        message = subscription.get_message()
+        if message:
+            if message['data'] == "KILL":
+                print 'i\'m closing'
+                break
+            print message
+
+
+def generate_following(ID):
+    list_of_following = my_server.sscan(str(ID) + '.following')
+    for followingID in list_of_following:
+        print followingID
+        print type(list_of_following)
+        thread = Thread(target=get_messages_for_id, args=(followingID, ))
+        thread.start()
+
+
+def kill_following(ID):
+    list_of_following = my_server.sscan(str(ID) + '.following')
+    for followingID in list_of_following:
+        print str(followingID)
+        my_server.publish(str(followingID),'KILL')
 
 if __name__ == "__main__":
 
-    setUser('rober', 'bleh')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    set_user('Rober', 'bleh')
+    set_user('Sergio', 'calvo')
+    add_follower(0, 1)
+    add_to_following(1, 0)
+    generate_following(1)
+    notify_streaming(0)
+    time.sleep(3)
+    print 'Vamos a matarlos...'
+    kill_following(1)
