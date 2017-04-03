@@ -80,30 +80,24 @@ def set_user(username=None, password=None):
     my_server.incr('ID')
 
 
-def add_follower(ID, *list_of_follower_IDs):
+def add_follower(ID, list_of_follower_IDs):
 
     my_server.sadd(str(ID) + '.followers', list_of_follower_IDs)
 
 
-def add_to_following(ID, *list_of_IDs_to_follow):
+def add_to_following(ID, list_of_IDs_to_follow):
 
     my_server.sadd(str(ID) + '.following', list_of_IDs_to_follow)
 
 
 def notify_streaming(ID):
     time.sleep(2)
-    print "Hola?"
     subscription = my_server.pubsub()
-
     # subscription.subscribe(0)
-
     my_server.publish(str(ID), 'I started streaming, join me!')
-
     # subscription.close()
 
-
 def get_messages_for_id(ID):
-    print "Me estoy ejecutando"
     subscription = my_server.pubsub()
     subscription.subscribe(str(ID))
 
@@ -117,7 +111,7 @@ def get_messages_for_id(ID):
 
 
 def generate_following(ID):
-    list_of_following = my_server.sscan(str(ID) + '.following')
+    list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
         print followingID
         print type(list_of_following)
@@ -126,7 +120,8 @@ def generate_following(ID):
 
 
 def kill_following(ID):
-    list_of_following = my_server.sscan(str(ID) + '.following')
+    print 'Killing threads'
+    list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
         print str(followingID)
         my_server.publish(str(followingID),'KILL')
@@ -135,10 +130,11 @@ if __name__ == "__main__":
 
     set_user('Rober', 'bleh')
     set_user('Sergio', 'calvo')
+    set_user('Ramon', 'pesado')
+    set_user('Diego', 'onice')
     add_follower(0, 1)
     add_to_following(1, 0)
     generate_following(1)
     notify_streaming(0)
     time.sleep(3)
-    print 'Vamos a matarlos...'
     kill_following(1)
