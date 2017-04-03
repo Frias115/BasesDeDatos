@@ -63,6 +63,7 @@ tambien se debe permitir especificar si estan activas o no.
 """
 
 
+
 def set_user(username=None, password=None):
 
     if not my_server.exists('ID'):
@@ -113,8 +114,6 @@ def get_messages_for_id(ID):
 def generate_following(ID):
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        print followingID
-        print type(list_of_following)
         thread = Thread(target=get_messages_for_id, args=(followingID, ))
         thread.start()
 
@@ -123,8 +122,36 @@ def kill_following(ID):
     print 'Killing threads'
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        print str(followingID)
         my_server.publish(str(followingID),'KILL')
+
+
+"""
+- Retransmisiones activas
+- Retransmisiones finalizadas
+    - Hashtags ID
+Sistema de busqueda teniendo en cuenta id o hashtag y que te diga si esta activa o no la retransmision
+
+id.retransmision.name       =   ['video1'    ,   'video2']
+id.retransmission.status    =   [   0        ,       1   ]
+id.retransmision.date       =   ['01.01.17'  , '02.02.17']
+id.retransmission.likes     =   [  '4'       ,      '3'  ]
+id.retransmissions.id_likes =   [[1, 2, 3, 4],  [2, 3, 4]]
+
+hashtag.retransmission.id =     [2, 3, 4, 5]
+
+Busqueda segun ID
+si le das un ID, te tiene que sacar todos sus videos ordenados por fecha. 
+
+"""
+
+
+def add_retransmission(ID, name, date, id_likes=[], status=1):
+    my_server.rpush(str(ID) + '.retransmission.name', name)
+    my_server.rpush(str(ID) + '.retransmission.date', date)
+    my_server.rpush(str(ID) + '.retransmission.id_likes', id_likes)
+    my_server.rpush(str(ID) + '.retransmission.status', status)
+
+
 
 if __name__ == "__main__":
 
@@ -132,9 +159,15 @@ if __name__ == "__main__":
     set_user('Sergio', 'calvo')
     set_user('Ramon', 'pesado')
     set_user('Diego', 'onice')
-    add_follower(0, 1)
+    add_follower(0, [1, 2, 3])
     add_to_following(1, 0)
+    add_to_following(2, 0)
+    add_to_following(3, 0)
     generate_following(1)
+    generate_following(2)
+    generate_following(3)
     notify_streaming(0)
     time.sleep(3)
     kill_following(1)
+    kill_following(2)
+    kill_following(3)
