@@ -1,6 +1,7 @@
 import redis
 import random
 import time
+from datetime import date
 from threading import Thread
 my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -152,6 +153,25 @@ def add_retransmission(ID, name, date, id_likes=[], status=1):
     my_server.rpush(str(ID) + '.retransmission.status', status)
 
 
+def get_retransmission_by_id(id):
+    from operator import itemgetter
+    video_list = []
+    list_names = str(id) + '.retransmission.name'
+    list_names_size = my_server.llen(list_names)
+    list_names_values = my_server.lrange(list_names,0, list_names_size)
+    for i in range(0, list_names_size):
+        video = []
+        video.append(my_server.lindex(list_names, i))
+        video.append(my_server.lindex(str(id) + '.retransmission.date', i))
+        video.append(my_server.lindex(str(id) + '.retransmission.id_likes', i))
+        video.append(my_server.lindex(str(id) + '.retransmission.status', i))
+        video_list.append(video)
+    sorted_list = sorted(video_list, key=itemgetter(1))
+    print sorted_list
+
+
+
+
 
 if __name__ == "__main__":
 
@@ -159,6 +179,7 @@ if __name__ == "__main__":
     set_user('Sergio', 'calvo')
     set_user('Ramon', 'pesado')
     set_user('Diego', 'onice')
+    """
     add_follower(0, [1, 2, 3])
     add_to_following(1, 0)
     add_to_following(2, 0)
@@ -171,3 +192,9 @@ if __name__ == "__main__":
     kill_following(1)
     kill_following(2)
     kill_following(3)
+"""
+
+    add_retransmission(0, 'prueba', 20170404, [0, 1])
+    add_retransmission(0, 'prueba1', 20170403, [2, 1])
+    add_retransmission(0, 'prueba2', 20170405, [2, 1])
+    get_retransmission_by_id(0)
