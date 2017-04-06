@@ -1,10 +1,12 @@
 import redis
 import random
 import time
-from datetime import date
 from threading import Thread
-my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
+from operator import itemgetter
 
+my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
+iteracion = 0
+index = []
 
 def get_variable(variable_name):
     response = my_server.get(variable_name)
@@ -113,37 +115,51 @@ PREGUNTAS:
 
 
 - Preguntas sobre los likes en las retransmisiones, meterlo dento de la estructura
-
-
 """
 
 
-def add_retransmission(ID, name, date, id_likes=[], status=1):
-    my_server.rpush(str(ID) + '.retransmission.name', name)
-    my_server.rpush(str(ID) + '.retransmission.date', date)
-    my_server.rpush(str(ID) + '.retransmission.id_likes', id_likes)
-    my_server.rpush(str(ID) + '.retransmission.status', status)
+def add_retransmission(ID, name, date, id_likes=[], hashtags = [], status=1):
+    retransmission_index = my_server.zadd(str(ID) + '.retransmission.index', date, name)
+    if retransmission_index is 0:
+        print 'El nombre ya existe! Elige otro.'
+    else:
+        dictionary = {'date': date, 'status': status, 'id_likes': id_likes, 'hashtags': hashtags}
+        my_server.hmset(str(ID) + '.retransmission.info.' + name, dictionary)
+        for i in hashtags:
+            my_server.sadd('hashtag.' + str(i), str(ID) + '.retransmission.index.' + name)
 
 
-def get_retransmission_by_id(id):
-    from operator import itemgetter
+def get_retransmissions_by_id(id, max_date = 99999999, min_date = 0):
+    iteracion = 0
     video_list = []
-    list_names = str(id) + '.retransmission.name'
-    list_names_size = my_server.llen(list_names)
-    list_names_values = my_server.lrange(list_names,0, list_names_size)
-    for i in range(0, list_names_size):
+    list_index = str(id) + '.retransmission.index'
+    index = my_server.zrevrangebyscore(list_index,max=max_date, min=min_date)
+    for i in range(0, 3):
+        var = index[i]
         video = []
-        video.append(my_server.lindex(list_names, i))
-        video.append(my_server.lindex(str(id) + '.retransmission.date', i))
-        video.append(my_server.lindex(str(id) + '.retransmission.id_likes', i))
-        video.append(my_server.lindex(str(id) + '.retransmission.status', i))
+        video.append(var)
+        info = my_server.hvals(str(id) + '.retransmission.info.' + str(var))
+        for j in info:
+            video.append(j)
+
+        video_list.append(video)
+    print video_list
+
+
+def get_more_retransmissions(id):
+    video_list = []
+    for i in range(0, 3):
+        var = index.pop()
+        video = []
+        video.append(var)
+        info = my_server.hvals(str(id) + '.retransmission.info.' + str(var))
+        for j in info:
+            video.append(j)
+
         video_list.append(video)
     sorted_list = sorted(video_list, key=itemgetter(1))
+    iteracion += 1
     print sorted_list
-
-
-
-
 
 if __name__ == "__main__":
 
@@ -166,7 +182,12 @@ if __name__ == "__main__":
     kill_following(3)
 """
 
-    add_retransmission(0, 'prueba', 20170404, [0, 1])
-    add_retransmission(0, 'prueba1', 20170403, [2, 1])
-    add_retransmission(0, 'prueba2', 20170405, [2, 1])
-    get_retransmission_by_id(0)
+    my_server.flushdb()
+    add_retransmission(0, 'prueba', 20170404, [0, 1], ['cuki', 'mono', 'perro'])
+    add_retransmission(0, 'prueba1', 20170403, [2, 1], ['flor', 'abeja', 'blancoynegro'], 0)
+    add_retransmission(0, 'prueba2', 20170405, [2, 1], ['marica', 'peleon', 'cachondo'], 0)
+    add_retransmission(0, 'prueba3', 20170402, [0, 1], ['cactus', 'pincha', 'sangre'])
+    add_retransmission(0, 'prueba4', 20170401, [2, 1], ['street', 'b&w', 'photography'])
+    add_retransmission(0, 'prueba5', 20170406, [2, 1], ['selfie', 'stick', 'sucks'], 0)
+    get_retransmissions_by_id(0)
+    # get_more_retransmissions(0)
