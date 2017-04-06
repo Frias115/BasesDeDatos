@@ -15,56 +15,6 @@ def set_variable(variable_name, variable_value=None):
     my_server.set(variable_name, variable_value)
 
 
-
-"""
-
-DONE
-El sistema debera ser capaz de gestionar la informacion relativa a la conexion de los
-usuarios (nombre de usuario, identificador del usuario y contrasena). La contrasena se
-podra guardar en formato plano.
-
-DONE
-El identificador del usuario se generara de forma automatica en la base de datos. Los
-identificadores seran numeros enteros que se asignaran de forma incremental siguiendo el
-orden en el que los usuarios se registran.
-
-DONE
-Se debera gestionar asi mismo los identificadores de las cookies que permiten entrar a los
-usuarios sin necesidad de realizar la identificacion de nuevo. Estos identificadores deberan
-expirar a los 7 dias de su creacion.
-
-DONE
-Se debera almacenar la informacion relativa a los seguidores que tiene un usuario
-
-DONE
-Asi mismo se debera almacenar la informacion relativa a las cuentas que sigue un usuario.
-
-DONE
-Los usuarios que esten siguiendo a otros usuarios deberan ser notificados cada
-vez que alguno de los usuarios que siguen realicen una retransmision.
-
-
-Se debera almacenar la informacion relativa a las retrasmisiones que realiza el usuario de
-modo que se pueda acceder a las retransmisiones activas y tambien las retransmisiones ya
-finalizadas
-
-
-Las retrasmisiones podran ser accedidas a traves del identificador del usuario que
-lo retrasmite.
-
-
-Asi mismo, las retransmisiones contaran con una serie de hashtags que lo
-identifican y que permitiran realizar busquedas sobre las retransmisiones en
-funcion de sus hashtags.
-
-
-Ademas de poder consultar las retransmisiones por identificador y/o hashtags,
-tambien se debe permitir especificar si estan activas o no.
-
-"""
-
-
-
 def set_user(username=None, password=None):
 
     if not my_server.exists('ID'):
@@ -142,6 +92,28 @@ hashtag.retransmission.id =     [2, 3, 4, 5]
 
 Busqueda segun ID
 si le das un ID, te tiene que sacar todos sus videos ordenados por fecha. 
+
+"""
+
+
+
+"""
+PREGUNTAS:
+
+- Esta bien lo de los threads en los avisos? Sip, es valido si funciona
+
+
+- Fecha que tipo de dato es? da lo mismo
+
+
+- Se podria hacer una carga de datos de las retranmisiones en una lista y luego utilizarla o hay que hacerlo sobre bd? mejor sobre bd
+
+
+- Los datos en retransmision son listas, valen? hay que aplicar lo que nos ha dicho
+
+
+- Preguntas sobre los likes en las retransmisiones, meterlo dento de la estructura
+
 
 """
 
