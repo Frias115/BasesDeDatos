@@ -2,7 +2,7 @@ import redis
 import random
 import time
 from threading import Thread
-from operator import itemgetter
+import ast
 
 my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
 index = []
@@ -114,12 +114,13 @@ PREGUNTAS:
 """
 
 
-def add_retransmission(ID, name, date, id_likes=[], hashtags=[], status=1):
+def add_retransmission(ID, name, date, hashtags=[]):
     retransmission_index = my_server.zadd(str(ID) + '.retransmission.index', date, name)
     if retransmission_index is 0:
         print 'El nombre ya existe! Elige otro.'
     else:
-        dictionary = {'date': date, 'status': status, 'id_likes': id_likes, 'hashtags': hashtags}
+        dictionary = {'date': date, 'status': 1, 'number_of_likes': 0, 'id_likes': [],
+                      'hashtags': hashtags, 'comments': []}
         my_server.hmset(str(ID) + '.retransmission.info.' + name, dictionary)
         for i in hashtags:
             my_server.zadd('hashtag.' + str(i), date, str(ID) + '.retransmission.info.' + name)
@@ -148,7 +149,7 @@ def get_retransmissions_by_id(id, max_date=99999999, min_date=0):
     return index
 
 
-def get_more_retransmissions(index, id=-1, hashtag=None):
+def get_more_retransmissions(index, id=-1):
     video_list = []
     iter = get_variable('iteracion')
     if (len(index) - 3 * int(iter)) >= 3:
@@ -195,7 +196,40 @@ def get_retransmissions_by_hashtag(hashtag, max_date=99999999, min_date=0):
     return index
 
 
+def like_retransmission(id, retransmission_name, retransmission_id):
+    aux = my_server.sadd(str(id) + '.liked_retransmissions', str(retransmission_id) + '.retransmission.info.' +
+                         str(retransmission_name))
+    if aux is 0:
+        print 'Already liked'
+        return
+    else:
+        like_list = my_server.hget(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                                   'id_likes')
+        like_list = ast.literal_eval(like_list)
+        like_list.append(id)
+        my_server.hmset(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                        {'id_likes': like_list})
+        my_server.hincrby(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                          'number_of_likes')
+
+
+def comment_retransmission(id, retransmission_name, retransmission_id, comment):
+    my_server.sadd(str(id) + '.commented_retransmissions', str(retransmission_id) + '.retransmission.info.' + str(retransmission_name))
+    comment_list = my_server.hget(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name), 'comments')
+    comment_list = ast.literal_eval(comment_list)
+    comment_list.append(str(id) + ': ' + comment)
+    my_server.hmset(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name), {'comments': comment_list})
+    my_server.publish(str(retransmission_id) + '.' + str(retransmission_name), str(id) + ' has commented on ' + retransmission_name)
+
+
+def end_retransmission(id, name):
+    aux = my_server.hincrby(str(id) + '.retransmission.info.' + str(name), 'status', 0)
+    if aux > 0:
+        my_server.hincrby(str(id) + '.retransmission.info.' + str(name), 'status', -1)
+
+
 if __name__ == "__main__":
+    my_server.flushdb()
     set_user('Rober', 'bleh')
     set_user('Sergio', 'calvo')
     set_user('Ramon', 'pesado')
@@ -215,18 +249,28 @@ if __name__ == "__main__":
     kill_following(3)
 """
 
-    my_server.flushdb()
-    add_retransmission(2, 'prueba', 20170404, [0, 1], ['cuki', 'stick', 'perro'])
-    add_retransmission(3, 'prueba1', 20170403, [2, 1], ['flor', 'abeja', 'stick'], 0)
-    add_retransmission(1, 'prueba2', 20170405, [2, 1], ['marica', 'peleon', 'cachondo'], 0)
-    add_retransmission(0, 'prueba3', 20170402, [0, 1], ['cactus', 'pincha', 'sangre'])
-    add_retransmission(1, 'prueba4', 20170401, [2, 1], ['street', 'b&w', 'photography'])
-    add_retransmission(2, 'prueba5', 20170406, [2, 1], ['selfie', 'stick', 'sucks'], 0)
-    add_retransmission(3, 'prueba6', 20170407, [2, 1], ['hand', 'mug', 'purse'], 0)
-    add_retransmission(3, 'prueba7', 20170407, [2, 1], ['stick', 'bread', 'ham'], 0)
-
+    add_retransmission(2, 'prueba', 20170404, ['cuki', 'stick', 'perro'])
+    add_retransmission(3, 'prueba1', 20170403, ['flor', 'abeja', 'stick'])
+    add_retransmission(1, 'prueba2', 20170405, ['marica', 'peleon', 'cachondo'])
+    add_retransmission(0, 'prueba3', 20170402, ['cactus', 'pincha', 'sangre'])
+    add_retransmission(1, 'prueba4', 20170401, ['street', 'b&w', 'photography'])
+    add_retransmission(2, 'prueba5', 20170406, ['selfie', 'stick', 'sucks'])
+    add_retransmission(3, 'prueba6', 20170407, ['hand', 'mug', 'purse'])
+    add_retransmission(3, 'prueba7', 20170407, ['stick', 'bread', 'ham'])
+    """
     index = get_retransmissions_by_id(0, 20170404, 20170401)
     get_more_retransmissions(index, 0)
     get_more_retransmissions(index, 0)
     index = get_retransmissions_by_hashtag('stick', 20170404, 20170403)
-    get_more_retransmissions(index,hashtag='stick')
+    get_more_retransmissions(index)
+"""
+    get_retransmissions_by_id(0)
+    like_retransmission(1, 'prueba3', 0)
+    like_retransmission(1, 'prueba3', 0)
+    get_retransmissions_by_id(0)
+    comment_retransmission(1, 'prueba3', 0, 'Me mola mazo tu rollo!')
+    get_retransmissions_by_id(0)
+    comment_retransmission(2, 'prueba3', 0, 'Menuda basura de stream!')
+    get_retransmissions_by_id(0)
+    end_retransmission(0, 'prueba3')
+    get_retransmissions_by_id(0)
