@@ -5,8 +5,8 @@ from threading import Thread
 from operator import itemgetter
 
 my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
-iteracion = 0
 index = []
+
 
 def get_variable(variable_name):
     response = my_server.get(variable_name)
@@ -18,7 +18,6 @@ def set_variable(variable_name, variable_value=None):
 
 
 def set_user(username=None, password=None):
-
     if not my_server.exists('ID'):
         set_variable('ID', 0)
 
@@ -27,7 +26,7 @@ def set_user(username=None, password=None):
     set_variable(ID, ID)
     set_variable(str(ID) + '.username', username)
     set_variable(str(ID) + '.password', password)
-    #Cookie
+    # Cookie
     set_variable(str(ID) + '.cookie', random.randint(0, 99999))
     my_server.expire(str(ID) + '.cookie', 604800)
 
@@ -35,12 +34,10 @@ def set_user(username=None, password=None):
 
 
 def add_follower(ID, list_of_follower_IDs):
-
     my_server.sadd(str(ID) + '.followers', list_of_follower_IDs)
 
 
 def add_to_following(ID, list_of_IDs_to_follow):
-
     my_server.sadd(str(ID) + '.following', list_of_IDs_to_follow)
 
 
@@ -50,6 +47,7 @@ def notify_streaming(ID):
     # subscription.subscribe(0)
     my_server.publish(str(ID), 'I started streaming, join me!')
     # subscription.close()
+
 
 def get_messages_for_id(ID):
     subscription = my_server.pubsub()
@@ -67,7 +65,7 @@ def get_messages_for_id(ID):
 def generate_following(ID):
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        thread = Thread(target=get_messages_for_id, args=(followingID, ))
+        thread = Thread(target=get_messages_for_id, args=(followingID,))
         thread.start()
 
 
@@ -75,7 +73,7 @@ def kill_following(ID):
     print 'Killing threads'
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        my_server.publish(str(followingID),'KILL')
+        my_server.publish(str(followingID), 'KILL')
 
 
 """
@@ -97,8 +95,6 @@ si le das un ID, te tiene que sacar todos sus videos ordenados por fecha.
 
 """
 
-
-
 """
 PREGUNTAS:
 
@@ -118,7 +114,7 @@ PREGUNTAS:
 """
 
 
-def add_retransmission(ID, name, date, id_likes=[], hashtags = [], status=1):
+def add_retransmission(ID, name, date, id_likes=[], hashtags=[], status=1):
     retransmission_index = my_server.zadd(str(ID) + '.retransmission.index', date, name)
     if retransmission_index is 0:
         print 'El nombre ya existe! Elige otro.'
@@ -126,15 +122,20 @@ def add_retransmission(ID, name, date, id_likes=[], hashtags = [], status=1):
         dictionary = {'date': date, 'status': status, 'id_likes': id_likes, 'hashtags': hashtags}
         my_server.hmset(str(ID) + '.retransmission.info.' + name, dictionary)
         for i in hashtags:
-            my_server.sadd('hashtag.' + str(i), str(ID) + '.retransmission.index.' + name)
+            my_server.zadd('hashtag.' + str(i), date, str(ID) + '.retransmission.info.' + name)
 
 
-def get_retransmissions_by_id(id, max_date = 99999999, min_date = 0):
-    iteracion = 0
+def get_retransmissions_by_id(id, max_date=99999999, min_date=0):
+    set_variable('iteracion', 1)
     video_list = []
     list_index = str(id) + '.retransmission.index'
-    index = my_server.zrevrangebyscore(list_index,max=max_date, min=min_date)
-    for i in range(0, 3):
+    index = my_server.zrevrangebyscore(list_index, max=max_date, min=min_date)
+
+    if len(index) >= 3:
+        number_results = 3
+    else:
+        number_results = len(index)
+    for i in range(0, number_results):
         var = index[i]
         video = []
         video.append(var)
@@ -144,25 +145,57 @@ def get_retransmissions_by_id(id, max_date = 99999999, min_date = 0):
 
         video_list.append(video)
     print video_list
+    return index
 
 
-def get_more_retransmissions(id):
+def get_more_retransmissions(index, id=-1, hashtag=None):
     video_list = []
-    for i in range(0, 3):
-        var = index.pop()
+    iter = get_variable('iteracion')
+    if (len(index) - 3 * int(iter)) >= 3:
+        number_results = 3
+    else:
+        number_results = (len(index) - 3 * int(iter))
+
+        for i in range(0, number_results):
+            var = index[i + 3 * int(iter)]
+            video = []
+            video.append(var)
+            if id is not -1:
+                info = my_server.hvals(str(id) + '.retransmission.info.' + str(var))
+            else:
+                info = my_server.hvals(str(var))
+            for j in info:
+                video.append(j)
+
+            video_list.append(video)
+        set_variable('iteracion', int(iter) + 1)
+        print video_list
+
+
+def get_retransmissions_by_hashtag(hashtag, max_date=99999999, min_date=0):
+    set_variable('iteracion', 1)
+    video_list = []
+    list_hashtags = 'hashtag.' + str(hashtag)
+    index = my_server.zrevrangebyscore(list_hashtags, max=max_date, min=min_date)
+
+    if len(index) >= 3:
+        number_results = 3
+    else:
+        number_results = len(index)
+    for i in range(0, number_results):
+        var = index[i]
         video = []
         video.append(var)
-        info = my_server.hvals(str(id) + '.retransmission.info.' + str(var))
+        info = my_server.hvals(str(var))
         for j in info:
             video.append(j)
 
         video_list.append(video)
-    sorted_list = sorted(video_list, key=itemgetter(1))
-    iteracion += 1
-    print sorted_list
+    print video_list
+    return index
+
 
 if __name__ == "__main__":
-
     set_user('Rober', 'bleh')
     set_user('Sergio', 'calvo')
     set_user('Ramon', 'pesado')
@@ -183,11 +216,17 @@ if __name__ == "__main__":
 """
 
     my_server.flushdb()
-    add_retransmission(0, 'prueba', 20170404, [0, 1], ['cuki', 'mono', 'perro'])
-    add_retransmission(0, 'prueba1', 20170403, [2, 1], ['flor', 'abeja', 'blancoynegro'], 0)
-    add_retransmission(0, 'prueba2', 20170405, [2, 1], ['marica', 'peleon', 'cachondo'], 0)
+    add_retransmission(2, 'prueba', 20170404, [0, 1], ['cuki', 'stick', 'perro'])
+    add_retransmission(3, 'prueba1', 20170403, [2, 1], ['flor', 'abeja', 'stick'], 0)
+    add_retransmission(1, 'prueba2', 20170405, [2, 1], ['marica', 'peleon', 'cachondo'], 0)
     add_retransmission(0, 'prueba3', 20170402, [0, 1], ['cactus', 'pincha', 'sangre'])
-    add_retransmission(0, 'prueba4', 20170401, [2, 1], ['street', 'b&w', 'photography'])
-    add_retransmission(0, 'prueba5', 20170406, [2, 1], ['selfie', 'stick', 'sucks'], 0)
-    get_retransmissions_by_id(0)
-    # get_more_retransmissions(0)
+    add_retransmission(1, 'prueba4', 20170401, [2, 1], ['street', 'b&w', 'photography'])
+    add_retransmission(2, 'prueba5', 20170406, [2, 1], ['selfie', 'stick', 'sucks'], 0)
+    add_retransmission(3, 'prueba6', 20170407, [2, 1], ['hand', 'mug', 'purse'], 0)
+    add_retransmission(3, 'prueba7', 20170407, [2, 1], ['stick', 'bread', 'ham'], 0)
+
+    index = get_retransmissions_by_id(0, 20170404, 20170401)
+    get_more_retransmissions(index, 0)
+    get_more_retransmissions(index, 0)
+    index = get_retransmissions_by_hashtag('stick', 20170404, 20170403)
+    get_more_retransmissions(index,hashtag='stick')
