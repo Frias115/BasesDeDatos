@@ -2,7 +2,10 @@ import redis
 import random
 import time
 from threading import Thread
+import ast
+
 my_server = redis.StrictRedis(host='localhost', port=6379, db=0)
+index = []
 
 
 def get_variable(variable_name):
@@ -14,89 +17,31 @@ def set_variable(variable_name, variable_value=None):
     my_server.set(variable_name, variable_value)
 
 
-
-"""
-
-DONE
-El sistema debera ser capaz de gestionar la informacion relativa a la conexion de los
-usuarios (nombre de usuario, identificador del usuario y contrasena). La contrasena se
-podra guardar en formato plano.
-
-DONE
-El identificador del usuario se generara de forma automatica en la base de datos. Los
-identificadores seran numeros enteros que se asignaran de forma incremental siguiendo el
-orden en el que los usuarios se registran.
-
-DONE
-Se debera gestionar asi mismo los identificadores de las cookies que permiten entrar a los
-usuarios sin necesidad de realizar la identificacion de nuevo. Estos identificadores deberan
-expirar a los 7 dias de su creacion.
-
-DONE
-Se debera almacenar la informacion relativa a los seguidores que tiene un usuario
-
-DONE
-Asi mismo se debera almacenar la informacion relativa a las cuentas que sigue un usuario.
-
-DONE
-Los usuarios que esten siguiendo a otros usuarios deberan ser notificados cada
-vez que alguno de los usuarios que siguen realicen una retransmision.
-
-
-Se debera almacenar la informacion relativa a las retrasmisiones que realiza el usuario de
-modo que se pueda acceder a las retransmisiones activas y tambien las retransmisiones ya
-finalizadas
-
-
-Las retrasmisiones podran ser accedidas a traves del identificador del usuario que
-lo retrasmite.
-
-
-Asi mismo, las retransmisiones contaran con una serie de hashtags que lo
-identifican y que permitiran realizar busquedas sobre las retransmisiones en
-funcion de sus hashtags.
-
-
-Ademas de poder consultar las retransmisiones por identificador y/o hashtags,
-tambien se debe permitir especificar si estan activas o no.
-
-"""
-
-
-
 def set_user(username=None, password=None):
-
     if not my_server.exists('ID'):
         set_variable('ID', 0)
 
     ID = get_variable('ID')
 
-    set_variable(ID, ID)
     set_variable(str(ID) + '.username', username)
     set_variable(str(ID) + '.password', password)
-    #Cookie
     set_variable(str(ID) + '.cookie', random.randint(0, 99999))
     my_server.expire(str(ID) + '.cookie', 604800)
-
     my_server.incr('ID')
 
 
 def add_follower(ID, list_of_follower_IDs):
-
     my_server.sadd(str(ID) + '.followers', list_of_follower_IDs)
 
 
 def add_to_following(ID, list_of_IDs_to_follow):
-
     my_server.sadd(str(ID) + '.following', list_of_IDs_to_follow)
 
 
 def notify_streaming(ID):
     time.sleep(2)
-    subscription = my_server.pubsub()
-    # subscription.subscribe(0)
     my_server.publish(str(ID), 'I started streaming, join me!')
-    # subscription.close()
+
 
 def get_messages_for_id(ID):
     subscription = my_server.pubsub()
@@ -111,63 +56,229 @@ def get_messages_for_id(ID):
             print message
 
 
-def generate_following(ID):
+def generate_threads_following(ID):
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        thread = Thread(target=get_messages_for_id, args=(followingID, ))
+        thread = Thread(target=get_messages_for_id, args=(followingID,))
         thread.start()
 
 
-def kill_following(ID):
+def kill_threads_following(ID):
     print 'Killing threads'
     list_of_following = my_server.smembers(str(ID) + '.following')
     for followingID in list_of_following:
-        my_server.publish(str(followingID),'KILL')
+        my_server.publish(str(followingID), 'KILL')
 
 
-"""
-- Retransmisiones activas
-- Retransmisiones finalizadas
-    - Hashtags ID
-Sistema de busqueda teniendo en cuenta id o hashtag y que te diga si esta activa o no la retransmision
-
-id.retransmision.name       =   ['video1'    ,   'video2']
-id.retransmission.status    =   [   0        ,       1   ]
-id.retransmision.date       =   ['01.01.17'  , '02.02.17']
-id.retransmission.likes     =   [  '4'       ,      '3'  ]
-id.retransmissions.id_likes =   [[1, 2, 3, 4],  [2, 3, 4]]
-
-hashtag.retransmission.id =     [2, 3, 4, 5]
-
-Busqueda segun ID
-si le das un ID, te tiene que sacar todos sus videos ordenados por fecha. 
-
-"""
+def add_retransmission(ID, name, date, hashtags=[]):
+    retransmission_index = my_server.zadd(str(ID) + '.retransmission.index', date, name)
+    if retransmission_index is 0:
+        print 'El nombre ya existe! Elige otro.'
+    else:
+        dictionary = {'date': date, 'status': 1, 'number_of_likes': 0, 'id_likes': [],
+                      'hashtags': hashtags, 'comments': []}
+        my_server.hmset(str(ID) + '.retransmission.info.' + name, dictionary)
+        for i in hashtags:
+            my_server.zadd('hashtag.' + str(i), date, str(ID) + '.retransmission.info.' + name)
 
 
-def add_retransmission(ID, name, date, id_likes=[], status=1):
-    my_server.rpush(str(ID) + '.retransmission.name', name)
-    my_server.rpush(str(ID) + '.retransmission.date', date)
-    my_server.rpush(str(ID) + '.retransmission.id_likes', id_likes)
-    my_server.rpush(str(ID) + '.retransmission.status', status)
+def get_retransmissions_by_hashtag(hashtag, max_date=99999999, min_date=0, status=0):
+    set_variable('iteracion', 1)
+    video_list = []
+    list_hashtags = 'hashtag.' + str(hashtag)
+    index = my_server.zrevrangebyscore(list_hashtags, max=max_date, min=min_date)
 
+    if len(index) >= 3:
+        number_results = 3
+    else:
+        number_results = len(index)
+
+    for i in range(0, number_results):
+        retransmission_link = index[i]
+        video = []
+        # If we want to see every retransmission, active or ended
+        if status is 0:
+            video.append(retransmission_link)
+            retransmission_info = my_server.hvals(str(retransmission_link))
+            for info in retransmission_info:
+                video.append(info)
+            video_list.append(video)
+        else:
+            # If we only want to see active retransmissions
+            if int(my_server.hget(index[i], 'status')) is 1:
+                video.append(retransmission_link)
+                retransmission_info = my_server.hvals(str(retransmission_link))
+                for info in retransmission_info:
+                    video.append(info)
+                video_list.append(video)
+
+    for i in video_list:
+        print i
+    return index
+
+
+def get_retransmissions_by_id(id, max_date=99999999, min_date=0, status=0):
+    set_variable('iteracion', 1)
+    video_list = []
+    list_index = str(id) + '.retransmission.index'
+    index = my_server.zrevrangebyscore(list_index, max=max_date, min=min_date)
+
+    if len(index) >= 3:
+        number_results = 3
+    else:
+        number_results = len(index)
+    for i in range(0, number_results):
+        retransmission_link = index[i]
+        video = []
+        # If we want to see every retransmission, active or ended
+        if status is 0:
+            video.append(retransmission_link)
+            retransmission_info = my_server.hvals(str(id) + '.retransmission.info.' + str(retransmission_link))
+            for info in retransmission_info:
+                video.append(info)
+            video_list.append(video)
+        # If we only want to see active retransmissions
+        else:
+            if int(my_server.hget(str(id) + '.retransmission.info.' + str(retransmission_link), 'status')) is 1:
+                video.append(retransmission_link)
+                retransmission_info = my_server.hvals(str(id) + '.retransmission.info.' + str(retransmission_link))
+                for info in retransmission_info:
+                    video.append(info)
+                video_list.append(video)
+
+    for i in video_list:
+        print i
+    return index
+
+
+def get_more_retransmissions(index, id=-1, status=0):
+    video_list = []
+    iter = get_variable('iteracion')
+    if (len(index) - 3 * int(iter)) >= 3:
+        number_results = 3
+    else:
+        number_results = (len(index) - 3 * int(iter))
+
+        for i in range(0, number_results):
+            # Depending on the iterator, we select different retransmission links
+            retransmission_link = index[i + 3 * int(iter)]
+            video = []
+            # If we want to see every retransmission, active or ended
+            if status is 0:
+                video.append(retransmission_link)
+                # checks whether we want more id retransmissions or hashtag retransmissions
+                if id is not -1:
+                    info = my_server.hvals(str(id) + '.retransmission.info.' + str(retransmission_link))
+                else:
+                    info = my_server.hvals(str(retransmission_link))
+                for j in info:
+                    video.append(j)
+                video_list.append(video)
+            # If we only want to see active retransmissions
+            else:
+                aux_status = None
+                # checks whether we want more id retransmissions or hashtag retransmissions
+                if id is not -1:
+                    aux_status = str(id) + '.retransmission.info.' + str(retransmission_link)
+                else:
+                    aux_status = str(retransmission_link)
+                # If we only want to see active retransmissions
+                if int(my_server.hget(aux_status, 'status')) is 1:
+                    video.append(retransmission_link)
+                    if id is not -1:
+                        info = my_server.hvals(str(id) + '.retransmission.info.' + str(retransmission_link))
+                    else:
+                        info = my_server.hvals(str(retransmission_link))
+                    for j in info:
+                        video.append(j)
+                    video_list.append(video)
+
+        set_variable('iteracion', int(iter) + 1)
+        for i in video_list:
+            print i
+
+
+def like_retransmission(id, retransmission_name, retransmission_id):
+    aux = my_server.sadd(str(id) + '.liked_retransmissions', str(retransmission_id) + '.retransmission.info.' +
+                         str(retransmission_name))
+    if aux is 0:
+        print 'Already liked'
+        return
+    else:
+        like_list = my_server.hget(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                                   'id_likes')
+        like_list = ast.literal_eval(like_list)
+        like_list.append(id)
+        my_server.hmset(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                        {'id_likes': like_list})
+        my_server.hincrby(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name),
+                          'number_of_likes')
+
+
+def comment_retransmission(id, retransmission_name, retransmission_id, comment):
+    my_server.sadd(str(id) + '.commented_retransmissions', str(retransmission_id) + '.retransmission.info.' + str(retransmission_name))
+    comment_list = my_server.hget(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name), 'comments')
+    comment_list = ast.literal_eval(comment_list)
+    comment_list.append(str(id) + ': ' + comment)
+    my_server.hmset(str(retransmission_id) + '.retransmission.info.' + str(retransmission_name), {'comments': comment_list})
+    # If we need to create a channel, this would do it.
+    # my_server.publish(str(retransmission_id) + '.' + str(retransmission_name), str(id) + ' has commented on ' + retransmission_name)
+
+
+def end_retransmission(id, name):
+    aux = my_server.hincrby(str(id) + '.retransmission.info.' + str(name), 'status', 0)
+    if aux > 0:
+        my_server.hincrby(str(id) + '.retransmission.info.' + str(name), 'status', -1)
 
 
 if __name__ == "__main__":
-
+    my_server.flushdb()
     set_user('Rober', 'bleh')
     set_user('Sergio', 'calvo')
     set_user('Ramon', 'pesado')
     set_user('Diego', 'onice')
+    """
     add_follower(0, [1, 2, 3])
     add_to_following(1, 0)
     add_to_following(2, 0)
     add_to_following(3, 0)
-    generate_following(1)
-    generate_following(2)
-    generate_following(3)
+    generate_threads_following(1)
+    generate_threads_following(2)
+    generate_threads_following(3)
     notify_streaming(0)
     time.sleep(3)
-    kill_following(1)
-    kill_following(2)
-    kill_following(3)
+    kill_threads_following(1)
+    kill_threads_following(2)
+    kill_threads_following(3)
+"""
+
+    add_retransmission(3, 'prueba', 20170404, ['cuki', 'stick', 'perro'])
+    add_retransmission(3, 'prueba1', 20170403, ['flor', 'abeja', 'stick'])
+    add_retransmission(1, 'prueba2', 20170405, ['marica', 'peleon', 'cachondo'])
+    add_retransmission(0, 'prueba3', 20170402, ['cactus', 'pincha', 'sangre'])
+    add_retransmission(1, 'prueba4', 20170401, ['street', 'b&w', 'photography'])
+    add_retransmission(2, 'prueba5', 20170406, ['selfie', 'stick', 'sucks'])
+    add_retransmission(3, 'prueba6', 20170407, ['hand', 'mug', 'purse'])
+    add_retransmission(3, 'prueba7', 20170407, ['stick', 'bread', 'ham'])
+
+    end_retransmission(3, 'prueba7')
+    end_retransmission(3, 'prueba6')
+
+    index = get_retransmissions_by_id(3,status=1)
+    get_more_retransmissions(index, 3,status=1)
+    get_more_retransmissions(index, 3,status=1)
+    index = get_retransmissions_by_hashtag('stick',status=1)
+    get_more_retransmissions(index,status=1)
+
+    """
+    get_retransmissions_by_id(0)
+    like_retransmission(1, 'prueba3', 0)
+    like_retransmission(1, 'prueba3', 0)
+    get_retransmissions_by_id(0)
+    comment_retransmission(1, 'prueba3', 0, 'Me mola mazo tu rollo!')
+    get_retransmissions_by_id(0)
+    comment_retransmission(2, 'prueba3', 0, 'Menuda basura de stream!')
+    get_retransmissions_by_id(0)
+    end_retransmission(0, 'prueba3')
+    get_retransmissions_by_id(0)
+    """
