@@ -25,6 +25,11 @@ def print_friends(tx, name):
 # 5. Plataformas intermedias
 # 6. Tipos de envio (Urgente, Urgente madrugadores, Urgente primera hora, Envio normal, Envio economico)
 
+# https://neo4j.com/docs/cypher-refcard/current/
+
+# Ruta mas corta
+# http://stackoverflow.com/questions/26458589/shortest-path-through-weighted-graph
+
 if __name__ == "__main__":
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
 
@@ -33,4 +38,3 @@ if __name__ == "__main__":
         session.write_transaction(add_friends, "Arthur", "Lancelot")
         session.write_transaction(add_friends, "Arthur", "Merlin")
         session.read_transaction(print_friends, "Arthur")
-
