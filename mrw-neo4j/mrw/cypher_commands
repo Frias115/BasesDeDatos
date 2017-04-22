@@ -5,21 +5,21 @@ MERGE (V:Oficina {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true
 MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true})
 merge (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false})
 CREATE
-(M)-[:Carretera]->(O),
-(M)-[:Carretera]->(B),
-(M)-[:Carretera]->(S),
-(S)-[:Carretera]->(V),
+(M)-[:Carretera {distancia: "561"}]->(O),
+(M)-[:Carretera {distancia: "624"}]->(B),
+(M)-[:Carretera {distancia: "532"}]->(S),
+(S)-[:Carretera {distancia: "654"}]->(V),
 
-(M)-[:Aereo]->(S),
-(M)-[:Aereo]->(B),
-(S)-[:Aereo]->(V),
-(B)-[:Aereo]->(Ma),
-(V)-[:Aereo]->(Ma),
+(M)-[:Aereo {distancia: "382"}]->(S),
+(M)-[:Aereo {distancia: "517"}]->(B),
+(S)-[:Aereo {distancia: "548"}]->(V),
+(B)-[:Aereo {distancia: "202"}]->(Ma),
+(V)-[:Aereo {distancia: "290"}]->(Ma),
 
-(M)-[:Ferroviario]->(B),
-(M)-[:Ferroviario]->(S),
-(S)-[:Ferroviario]->(V),
+(M)-[:Ferroviario {distancia: "460"}]->(B),
+(M)-[:Ferroviario {distancia: "430"}]->(S),
+(S)-[:Ferroviario {distancia: "550"}]->(V),
 
-(B)-[:Maritimo]->(Ma),
-(V)-[:Maritimo]->(Ma)
+(B)-[:Maritimo {distancia: "200"}]->(Ma),
+(V)-[:Maritimo {distancia: "300"}]->(Ma)
 
