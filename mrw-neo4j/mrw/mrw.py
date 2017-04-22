@@ -17,6 +17,34 @@ def print_friends(tx, name):
 #flush nodo sin relacion match (n) delete n
 
 
+def show_services(postal_office=None):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.read_transaction(_show_services, postal_office)
+
+def _show_services(tx, postal_office):
+    if postal_office is None:
+        for office in tx.run('MATCH (a:Oficina) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico'):
+            print('Oficina: ' + str(office['a.name']) +
+                  ' \n\tEnvio urgente 4h: ' + str(office["a.urgente4h"]) +
+                  ' \n\tEnvio urgente 6h: ' + str(office["a.urgente6h"]) +
+                  ' \n\tEnvio urgente 8h: ' + str(office["a.urgente8h"]) +
+                  ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
+                  ' \n\tEnvio economico:  ' + str(office["a.economico"]))
+    else:
+        aux_list = []
+        if type(postal_office) is not list:
+            aux_list.append(postal_office)
+            postal_office = aux_list
+        for p_o in range(0, len(postal_office)):
+            for office in tx.run('MATCH (a:Oficina {name: $name}) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico', name=postal_office[p_o]):
+                print('Oficina: ' + str(office['a.name']) +
+                      ' \n\tEnvio urgente 4h: ' + str(office["a.urgente4h"]) +
+                      ' \n\tEnvio urgente 6h: ' + str(office["a.urgente6h"]) +
+                      ' \n\tEnvio urgente 8h: ' + str(office["a.urgente8h"]) +
+                      ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
+                      ' \n\tEnvio economico:  ' + str(office["a.economico"]))
+
 # Cosas que vamos a necesitar:
 # 1. Puntos de entrega (+ info servicios disponibles)
 # 2. Puntos de recogida (+ info servicios disponibles)
@@ -31,10 +59,5 @@ def print_friends(tx, name):
 # http://stackoverflow.com/questions/26458589/shortest-path-through-weighted-graph
 
 if __name__ == "__main__":
-    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
 
-    with driver.session() as session:
-        session.write_transaction(add_friends, "Arthur", "Guinevere")
-        session.write_transaction(add_friends, "Arthur", "Lancelot")
-        session.write_transaction(add_friends, "Arthur", "Merlin")
-        session.read_transaction(print_friends, "Arthur")
+    show_services(['Madrid', 'Valencia', 'Bilbao'])

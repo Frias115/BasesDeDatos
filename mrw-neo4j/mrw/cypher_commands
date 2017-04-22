@@ -1,9 +1,9 @@
-MERGE (B:Oficina {name: "Barcelona", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true})
-MERGE (M:Oficina {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false})
-MERGE (S:Oficina {name: "Sevilla", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false})
-MERGE (V:Oficina {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true})
-MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true})
-merge (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false})
+MERGE (B:Oficina {name: "Barcelona", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
+MERGE (M:Oficina {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
+MERGE (S:Oficina {name: "Sevilla", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: false, normal12h:true, economico:true})
+MERGE (V:Oficina {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:false})
+MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true, urgente4h: false, urgente6h: true, urgente8h: true, normal12h:false, economico:true})
+merge (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false, urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
 CREATE
 (M)-[:Carretera {distancia: "561"}]->(O),
 (M)-[:Carretera {distancia: "624"}]->(B),
