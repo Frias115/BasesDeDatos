@@ -60,4 +60,4 @@ def _show_services(tx, postal_office):
 
 if __name__ == "__main__":
 
-    show_services(['Madrid', 'Valencia', 'Bilbao'])
+    show_services()

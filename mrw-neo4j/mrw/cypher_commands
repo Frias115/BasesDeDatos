@@ -1,9 +1,14 @@
 MERGE (B:Oficina {name: "Barcelona", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
-MERGE (M:Oficina {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
+MERGE (M:puntoIntermedio {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false})
 MERGE (S:Oficina {name: "Sevilla", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: false, normal12h:true, economico:true})
-MERGE (V:Oficina {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:false})
+MERGE (V:puntoIntermedio {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true})
 MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true, urgente4h: false, urgente6h: true, urgente8h: true, normal12h:false, economico:true})
-merge (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false, urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
+MERGE (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false, urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
+MERGE (DEC:DatosEnvio {name: "Carretera", minX100km: 60, minCargaDescarga: 5, precioX100km: 1})
+MERGE (DEA:DatosEnvio {name: "Aereo", minX100km: 10, minCargaDescarga: 40, precioX100km: 3.5})
+MERGE (DEF:DatosEnvio {name: "Ferrocarril", minX100km: 50, minCargaDescarga: 10, precioX100km: 0.8})
+MERGE (DEM:DatosEnvio {name: "Maritimo", minX100km: 120, minCargaDescarga: 20, precioX100km: 0.3})
+
 CREATE
 (M)-[:Carretera {distancia: "561"}]->(O),
 (M)-[:Carretera {distancia: "624"}]->(B),
