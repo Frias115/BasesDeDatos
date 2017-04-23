@@ -22,6 +22,7 @@ def show_services(postal_office=None):
     with driver.session() as session:
         session.read_transaction(_show_services, postal_office)
 
+
 def _show_services(tx, postal_office):
     if postal_office is None:
         for office in tx.run('MATCH (a:Oficina) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico'):
@@ -45,6 +46,22 @@ def _show_services(tx, postal_office):
                       ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
                       ' \n\tEnvio economico:  ' + str(office["a.economico"]))
 
+
+def find_shortest_path(departure, arrival):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.read_transaction(_find_shortest_path, departure, arrival)
+
+
+def _find_shortest_path(tx, departure, arrival):
+    for office in tx.run(
+        'MATCH a = (departure:Oficina {name: $departure})-[*1..6]-(arrival:Oficina {name: $arrival})'
+        ' RETURN a as shortestPath,'
+        ' REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime order by totalTime ASC limit 3', departure=departure, arrival=arrival):
+        print office
+
+
+
 # Cosas que vamos a necesitar:
 # 1. Puntos de entrega (+ info servicios disponibles)
 # 2. Puntos de recogida (+ info servicios disponibles)
@@ -60,4 +77,4 @@ def _show_services(tx, postal_office):
 
 if __name__ == "__main__":
 
-    show_services()
+    find_shortest_path('Oporto', 'Mallorca')
