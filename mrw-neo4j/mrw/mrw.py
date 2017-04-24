@@ -56,7 +56,7 @@ def find_shortest_path(departure, arrival):
 
 def _find_shortest_path(tx, departure, arrival):
     for office in tx.run(
-        'MATCH a = (departure:Oficina {name: $departure})-[*1..6]-(arrival:Oficina {name: $arrival})'
+        'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival})'
         ' RETURN a as shortestPath,'
         ' REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime order by totalTime ASC limit 3', departure=departure, arrival=arrival):
         print office
@@ -66,24 +66,27 @@ def _find_shortest_path(tx, departure, arrival):
 Preguntas:
 
  - ¿Las rutas son todos son puntos por los que pasa un paquete, no? ¿Como lo podriamos hacer?, solo tenemos hecho que calcule el mejor tiempo pero no nos da los puntos
-
-
+    
+si, hay que cambiar la funcion que tenemos con algun WHEN/WITH hay que ver como sacar la informacion. Hay que delimitar bien las consultas para que sea optimo.
 
  - ¿Como organizamos la flota? ¿Como variables de la oficina o como nodos conectados a las oficinas?
   
-  
+Nodos generalistas (un coche es un barco, avion y tren) y estan conectado mediante una relacion con la oficina,
+punto intermedio o lo que toque y asi sabemos como avanza en el camino.
   
  - ¿Como organizamos los paquetes? ¿Como variables del vehiculo o como nodos conectados a un vehiculo?
  
- 
+Son nodos unidos a los vehiculos que los transportan y al cliente que los ha enviado. Una vez se ha realizado el envio,
+la relacion con la oficina se dehace y solo queda la del usuario.
  
  - ¿Tenemos que tener una query para pedir informacion del paquete?
  
- 
+si, tiene que tener informacion de la ruta. (por donde ha pasado y por donde va a pasar)
  
  - ¿Diferencia entre gestionar y consultar? en el punto de los clientes
  
- 
+Gestionar -> guardar datos en la base de datos
+consultar -> queries en la base de datos
  
  
 """
