@@ -1,3 +1,4 @@
+# coding=utf-8
 from neo4j.v1 import GraphDatabase
 
 
@@ -60,6 +61,32 @@ def _find_shortest_path(tx, departure, arrival):
         ' REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime order by totalTime ASC limit 3', departure=departure, arrival=arrival):
         print office
 
+
+"""
+Preguntas:
+
+ - ¿Las rutas son todos son puntos por los que pasa un paquete, no? ¿Como lo podriamos hacer?, solo tenemos hecho que calcule el mejor tiempo pero no nos da los puntos
+
+
+
+ - ¿Como organizamos la flota? ¿Como variables de la oficina o como nodos conectados a las oficinas?
+  
+  
+  
+ - ¿Como organizamos los paquetes? ¿Como variables del vehiculo o como nodos conectados a un vehiculo?
+ 
+ 
+ 
+ - ¿Tenemos que tener una query para pedir informacion del paquete?
+ 
+ 
+ 
+ - ¿Diferencia entre gestionar y consultar? en el punto de los clientes
+ 
+ 
+ 
+ 
+"""
 
 
 # Cosas que vamos a necesitar:
