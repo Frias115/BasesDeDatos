@@ -48,24 +48,39 @@ def _show_services(tx, postal_office):
                       ' \n\tEnvio economico:  ' + str(office["a.economico"]))
 
 
-def find_shortest_path(departure, arrival):
+def find_shortest_path(departure, arrival, type):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        session.read_transaction(_find_shortest_path, departure, arrival)
+        session.read_transaction(_find_shortest_path, departure, arrival, type)
 
 
-def _find_shortest_path(tx, departure, arrival):
-    for office in tx.run(
-        'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival})'
-        ' RETURN a as shortestPath,'
-        ' REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime order by totalTime ASC limit 3', departure=departure, arrival=arrival):
-        print office
+def _find_shortest_path(tx, departure, arrival, type):
+    if type is 'urgente4h':
+        time = 4*60
+    elif type is 'urgente6h':
+        time = 6*60
+    elif type is 'urgente8h':
+        time = 8*60
+    elif type is 'normal12h':
+        time = 12*60
+    else:
+        time = 0
 
+    if time is 0:
+        print 'hi'
+    else:
+        for office in tx.run(
+            'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
+            'with nodes(a) as nodes, relationships(a) as relationships, length(a) as num limit 1 '
+            'unwind nodes as node '
+            'unwind relationships as relationship '
+            'RETURN node.name, relationship', departure=departure, arrival=arrival, type=type):
+            print office
 
 """
 Preguntas:
 
- - ¿Las rutas son todos son puntos por los que pasa un paquete, no? ¿Como lo podriamos hacer?, solo tenemos hecho que calcule el mejor tiempo pero no nos da los puntos
+ - ¿Las rutas son todos los puntos por los que pasa un paquete, no? ¿Como lo podriamos hacer?, solo tenemos hecho que calcule el mejor tiempo pero no nos da los puntos
     
 si, hay que cambiar la funcion que tenemos con algun WHEN/WITH hay que ver como sacar la informacion. Hay que delimitar bien las consultas para que sea optimo.
 
@@ -104,7 +119,8 @@ consultar -> queries en la base de datos
 
 # Ruta mas corta
 # http://stackoverflow.com/questions/26458589/shortest-path-through-weighted-graph
+# http://stackoverflow.com/questions/28032830/cypher-query-to-return-nodes-in-path-order
 
 if __name__ == "__main__":
 
-    find_shortest_path('Oporto', 'Mallorca')
+    find_shortest_path('Oporto', 'Mallorca', 'urgente4h')
