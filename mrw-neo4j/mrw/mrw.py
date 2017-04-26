@@ -55,6 +55,11 @@ def find_shortest_path(departure, arrival, type):
 
 
 def _find_shortest_path(tx, departure, arrival, type):
+    for office in tx.run(
+        'Match (a:Oficina {name: $departure}) RETURN a.urgente4h, a.urgente6h, a.urgente8h, a.normal12h, a.economico', departure=departure):
+        if office['a.' + str(type)] is False:
+            print 'El tipo de envio solicitado no esta disponible.'
+            return None
     if type is 'urgente4h':
         time = 4*60
     elif type is 'urgente6h':
@@ -71,11 +76,26 @@ def _find_shortest_path(tx, departure, arrival, type):
     else:
         for office in tx.run(
             'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
-            'with nodes(a) as nodes, relationships(a) as relationships, length(a) as num limit 1 '
-            'unwind nodes as node '
-            'unwind relationships as relationship '
-            'RETURN node.name, relationship', departure=departure, arrival=arrival, type=type):
-            print office
+            'RETURN relationships(a) as relationships, nodes(a) as nodes, '
+            'REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime '
+            'order by totalTime ASC limit 1', departure = departure, arrival = arrival):
+
+            if office["totalTime"] > time:
+                print 'No existe una ruta valida que cumpla ese tipo de envio.'
+            else:
+                print 'Tiempo estimado: ' + str(office['totalTime'])
+                print 'Caminos entre las ciudades: '
+                for relationship in range(0, len(office['relationships'])):
+                    print '\t' + str(office['relationships'][relationship]['name'])
+                print 'Nodos por los que pasa: '
+                for nodo in range(0, len(office['nodes'])):
+                    print '\t' + str(office['nodes'][nodo]['name'])
+
+                for nodo in range(0, len(office['nodes'])):
+                    if nodo >= len(office['nodes'])-1:
+                        print str(office['nodes'][nodo]['name']),
+                    else:
+                        print str(office['nodes'][nodo]['name']) + ' --[' + str(office['relationships'][nodo]['name']) + ']->',
 
 """
 Preguntas:
@@ -123,4 +143,4 @@ consultar -> queries en la base de datos
 
 if __name__ == "__main__":
 
-    find_shortest_path('Oporto', 'Mallorca', 'urgente4h')
+    find_shortest_path('Oporto', 'Mallorca', 'normal12h')
