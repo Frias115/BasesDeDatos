@@ -21,7 +21,7 @@ def print_friends(tx, name):
 def show_services(postal_office=None):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        session.read_transaction(_show_services, postal_office)
+        return session.read_transaction(_show_services, postal_office)
 
 
 def _show_services(tx, postal_office):
@@ -51,7 +51,7 @@ def _show_services(tx, postal_office):
 def find_shortest_path(departure, arrival, type):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        session.read_transaction(_find_shortest_path, departure, arrival, type)
+        return session.read_transaction(_find_shortest_path, departure, arrival, type)
 
 
 def _find_shortest_path(tx, departure, arrival, type):
@@ -71,8 +71,36 @@ def _find_shortest_path(tx, departure, arrival, type):
     else:
         time = 0
 
+    total_cost = 0
+    total_time = 0
+    relationships = []
+    route = []
     if time is 0:
-        print 'hi'
+        for office in tx.run(
+            'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
+            'RETURN relationships(a) as relationships, nodes(a) as nodes, '
+            'REDUCE(cost=0, r in relationships(a) | cost + r.costeAsociado) as totalCost '
+            'order by totalCost ASC limit 1', departure = departure, arrival = arrival):
+            print 'coste estimado: ' + str(office['totalCost'])
+            total_cost = float(office['totalCost'])
+            print 'Caminos entre las ciudades: '
+            for relationship in range(0, len(office['relationships'])):
+                print '\t' + str(office['relationships'][relationship]['name'])
+                total_time = + float(office['relationships'][relationship]['tiempo'])
+                relationships.append(str(office['relationships'][relationship]['name']))
+            print 'Nodos por los que pasa: '
+            for nodo in range(0, len(office['nodes'])):
+                print '\t' + str(office['nodes'][nodo]['name'])
+                route.append(str(office['nodes'][nodo]['name']))
+
+            for nodo in range(0, len(office['nodes'])):
+                if nodo >= len(office['nodes']) - 1:
+                    print str(office['nodes'][nodo]['name'])
+                else:
+                    print str(office['nodes'][nodo]['name']) + ' --[' + str(
+                        office['relationships'][nodo]['name']) + ']->',
+
+
     else:
         for office in tx.run(
             'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
@@ -84,18 +112,70 @@ def _find_shortest_path(tx, departure, arrival, type):
                 print 'No existe una ruta valida que cumpla ese tipo de envio.'
             else:
                 print 'Tiempo estimado: ' + str(office['totalTime'])
+                total_time = float(office['totalTime'])
                 print 'Caminos entre las ciudades: '
                 for relationship in range(0, len(office['relationships'])):
                     print '\t' + str(office['relationships'][relationship]['name'])
+                    total_cost = + float(office['relationships'][relationship]['costeAsociado'])
+                    relationships.append(str(office['relationships'][relationship]['name']))
                 print 'Nodos por los que pasa: '
                 for nodo in range(0, len(office['nodes'])):
                     print '\t' + str(office['nodes'][nodo]['name'])
-
+                    route.append(str(office['nodes'][nodo]['name']))
                 for nodo in range(0, len(office['nodes'])):
                     if nodo >= len(office['nodes'])-1:
-                        print str(office['nodes'][nodo]['name']),
+                        print str(office['nodes'][nodo]['name'])
                     else:
                         print str(office['nodes'][nodo]['name']) + ' --[' + str(office['relationships'][nodo]['name']) + ']->',
+
+    return dict({'type': type, 'total_cost': total_cost, 'total_time': total_time, 'relationships': relationships, 'route': route})
+
+
+def new_package(path_info):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.read_transaction( _new_package, path_info)
+
+
+def _new_package(tx, path_info):
+    aux = -1
+    for office in tx.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
+                         'RETURN s.ID limit 1', name=path_info.get('route')[0]):
+        aux = office
+    if aux is -1:
+        print 'No hay vehiculos disponibles!'
+        return
+    else:
+        print 'Hay vehiculos!'
+    for office in tx.run(
+        'match (ID:ID) '
+        'set ID.PID = ID.PID + 1 '
+        'return ID.PID'):
+        ID = office['ID.PID']
+        print 'se ha acabado ID'
+    tipo = path_info.get('type')
+    print tipo
+    coste_total = path_info.get('total_cost')
+    print coste_total
+    tiempo_total = path_info.get('total_time')
+    print tiempo_total
+    ruta = path_info.get('route')
+    print ruta
+    relaciones = path_info.get('relationships')
+    print relaciones
+    for office in tx.run(
+        'MERGE (package:Paquete {ID: $ID, tipo: $tipo, coste_total: $coste_total, '
+        'tiempo_total: $tiempo_total, ruta: $ruta, relaciones: $relaciones}) ',
+        ID=ID, tipo=tipo, coste_total=coste_total,
+        tiempo_total=tiempo_total, ruta=ruta,
+        relaciones=relaciones):
+        print 'se ha acabado MERGE'
+    for office in tx.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}, (p:Paquete {ID:$ID})) '
+        'CREATE (p)-[:Transporta]->(s) '
+        'SET s.ruta = $ruta, s.destino = $destino',
+                         ID_vehiculo=aux, destino=path_info.get('route')[-1], ruta=path_info.get('route'), ID=ID):
+        print office
+        print 'se ha acabado CREATE'
 
 """
 Preguntas:
@@ -143,4 +223,5 @@ consultar -> queries en la base de datos
 
 if __name__ == "__main__":
 
-    find_shortest_path('Oporto', 'Mallorca', 'normal12h')
+    path_info = find_shortest_path('Oporto', 'Barcelona', 'economico')
+    new_package(path_info)

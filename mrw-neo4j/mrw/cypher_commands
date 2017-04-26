@@ -1,30 +1,77 @@
+//Oficinas y puntos intermedios
 MERGE (B:Oficina {name: "Barcelona", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
 MERGE (M:puntoIntermedio {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false})
 MERGE (S:Oficina {name: "Sevilla", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: false, normal12h:true, economico:true})
 MERGE (V:puntoIntermedio {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true})
 MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true, urgente4h: false, urgente6h: true, urgente8h: true, normal12h:false, economico:true})
 MERGE (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false, urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
+
+//Datos de envio
 MERGE (DEC:DatosEnvio {name: "Carretera", minX100km: 60, minCargaDescarga: 5, precioX100km: 1})
 MERGE (DEA:DatosEnvio {name: "Aereo", minX100km: 10, minCargaDescarga: 40, precioX100km: 3.5})
 MERGE (DEF:DatosEnvio {name: "Ferrocarril", minX100km: 50, minCargaDescarga: 10, precioX100km: 0.8})
 MERGE (DEM:DatosEnvio {name: "Maritimo", minX100km: 120, minCargaDescarga: 20, precioX100km: 0.3})
 
+//Vehiculos Barcelona
+MERGE (VB1:Vehiculo {ID: "VB1", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
+MERGE (VB2:Vehiculo {ID: "VB2", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
+MERGE (VB3:Vehiculo {ID: "VB3", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
+MERGE (VB4:Vehiculo {ID: "VB4", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
+
+//Vehiculos Mallorca
+MERGE (VMa1:Vehiculo {ID: "VMa1", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
+MERGE (VMa2:Vehiculo {ID: "VMa2", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
+MERGE (VMa3:Vehiculo {ID: "VMa3", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
+
+//Vehiculos Oporto
+MERGE (VO1:Vehiculo {ID: "VO1", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: ''})
+MERGE (VO2:Vehiculo {ID: "VO2", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: ''})
+
+//Vehiculos Sevilla
+MERGE (VS1:Vehiculo {ID: "VS1", origen: 'Sevilla', destino: '', posicionActual: 'Sevilla', ruta: ''})
+
+//ID de: Nodo
+MERGE (ID:ID {name: "ID", PID: 0})
+
 CREATE
+//Relaciones de tipo Carretera
 (M)-[:Carretera {name: 'Carretera', distancia: 561.0, tiempo: (561.0/100.0)*60.0+5.0, costeAsociado: (561.0/100.0)*1.0}]->(O),
 (M)-[:Carretera {name: 'Carretera', distancia: 624.0, tiempo: (624.0/100.0)*60.0+5.0, costeAsociado: (624.0/100.0)*1.0}]->(B),
 (M)-[:Carretera {name: 'Carretera', distancia: 532.0, tiempo: (532.0/100.0)*60.0+5.0, costeAsociado: (532.0/100.0)*1.0}]->(S),
 (S)-[:Carretera {name: 'Carretera', distancia: 654.0, tiempo: (654.0/100.0)*60.0+5.0, costeAsociado: (654.0/100.0)*1.0}]->(V),
 
+//Relaciones de tipo Aereo
 (M)-[:Aereo {name: 'Aereo', distancia: 382.0, tiempo: (382.0/100.0)*10.0+40.0, costeAsociado: (382.0/100.0)*3.5}]->(S),
 (M)-[:Aereo {name: 'Aereo', distancia: 517.0, tiempo: (517.0/100.0)*10.0+40.0, costeAsociado: (517.0/100.0)*3.5}]->(B),
 (S)-[:Aereo {name: 'Aereo', distancia: 548.0, tiempo: (548.0/100.0)*10.0+40.0, costeAsociado: (548.0/100.0)*3.5}]->(V),
 (B)-[:Aereo {name: 'Aereo', distancia: 202.0, tiempo: (202.0/100.0)*10.0+40.0, costeAsociado: (202.0/100.0)*3.5}]->(Ma),
 (V)-[:Aereo {name: 'Aereo', distancia: 290.0, tiempo: (290.0/100.0)*10.0+40.0, costeAsociado: (290.0/100.0)*3.5}]->(Ma),
 
+//Relaciones de tipo Ferroviario
 (M)-[:Ferroviario {name: 'Ferroviario', distancia: 460.0, tiempo: (460.0/100.0)*50.0+10.0, costeAsociado: (460.0/100.0)*0.8}]->(B),
 (M)-[:Ferroviario {name: 'Ferroviario', distancia: 430.0, tiempo: (430.0/100.0)*50.0+10.0, costeAsociado: (430.0/100.0)*0.8}]->(S),
 (S)-[:Ferroviario {name: 'Ferroviario', distancia: 550.0, tiempo: (550.0/100.0)*50.0+10.0, costeAsociado: (550.0/100.0)*0.8}]->(V),
 
+//Relaciones de tipo Maritimo
 (B)-[:Maritimo {name: 'Maritimo', distancia: 200.0, tiempo: (200.0/100.0)*120.0+20.0, costeAsociado: (200.0/100.0)*0.3}]->(Ma),
-(V)-[:Maritimo {name: 'Maritimo', distancia: 300.0, tiempo: (300.0/100.0)*120.0+20.0, costeAsociado: (300.0/100.0)*0.3}]->(Ma)
+(V)-[:Maritimo {name: 'Maritimo', distancia: 300.0, tiempo: (300.0/100.0)*120.0+20.0, costeAsociado: (300.0/100.0)*0.3}]->(Ma),
+
+//Relaciones entre vehiculos y Barcelona
+(VB1)-[:Esta]->(B),
+(VB2)-[:Esta]->(B),
+(VB3)-[:Esta]->(B),
+(VB4)-[:Esta]->(B),
+
+//Relaciones entre vehiculos y Mallorca
+(VMa1)-[:Esta]->(Ma),
+(VMa2)-[:Esta]->(Ma),
+(VMa3)-[:Esta]->(Ma),
+
+//Relaciones entre vehiculos y Oporto
+(VO1)-[:Esta]->(O),
+(VO2)-[:Esta]->(O),
+
+//Relaciones entre vehiculos y Sevilla
+(VS1)-[:Esta]->(S)
+
 
