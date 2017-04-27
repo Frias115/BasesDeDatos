@@ -1,181 +1,164 @@
 # coding=utf-8
 from neo4j.v1 import GraphDatabase
 
-
-
-def add_friends(tx, name, friend_name):
-    tx.run("MERGE (a:Person {name: $name}) "
-           "MERGE (a)-[:KNOWS]->(friend:Person {name: $friend_name})",
-           name=name, friend_name=friend_name)
-
-
-def print_friends(tx, name):
-    for record in tx.run("MATCH (a:Person)-[:KNOWS]->(friend) WHERE a.name = $name "
-                         "RETURN friend.name ORDER BY friend.name", name=name):
-        print(record["friend.name"])
-
-#flush                   match (n)-[r]-(m) delete n,r,m
-#flush nodo sin relacion match (n) delete n
-
-
 def show_services(postal_office=None):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        return session.read_transaction(_show_services, postal_office)
 
-
-def _show_services(tx, postal_office):
-    if postal_office is None:
-        for office in tx.run('MATCH (a:Oficina) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico'):
-            print('Oficina: ' + str(office['a.name']) +
-                  ' \n\tEnvio urgente 4h: ' + str(office["a.urgente4h"]) +
-                  ' \n\tEnvio urgente 6h: ' + str(office["a.urgente6h"]) +
-                  ' \n\tEnvio urgente 8h: ' + str(office["a.urgente8h"]) +
-                  ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
-                  ' \n\tEnvio economico:  ' + str(office["a.economico"]))
-    else:
-        aux_list = []
-        if type(postal_office) is not list:
-            aux_list.append(postal_office)
-            postal_office = aux_list
-        for p_o in range(0, len(postal_office)):
-            for office in tx.run('MATCH (a:Oficina {name: $name}) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico', name=postal_office[p_o]):
+        if postal_office is None:
+            for office in session.run('MATCH (a:Oficina) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico'):
                 print('Oficina: ' + str(office['a.name']) +
                       ' \n\tEnvio urgente 4h: ' + str(office["a.urgente4h"]) +
                       ' \n\tEnvio urgente 6h: ' + str(office["a.urgente6h"]) +
                       ' \n\tEnvio urgente 8h: ' + str(office["a.urgente8h"]) +
                       ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
                       ' \n\tEnvio economico:  ' + str(office["a.economico"]))
+        else:
+            aux_list = []
+            if type(postal_office) is not list:
+                aux_list.append(postal_office)
+                postal_office = aux_list
+            for p_o in range(0, len(postal_office)):
+                for office in session.run('MATCH (a:Oficina {name: $name}) RETURN a.urgente4h, a.name, a.urgente6h, a.urgente8h, a.normal12h, a.economico', name=postal_office[p_o]):
+                    print('Oficina: ' + str(office['a.name']) +
+                          ' \n\tEnvio urgente 4h: ' + str(office["a.urgente4h"]) +
+                          ' \n\tEnvio urgente 6h: ' + str(office["a.urgente6h"]) +
+                          ' \n\tEnvio urgente 8h: ' + str(office["a.urgente8h"]) +
+                          ' \n\tEnvio normal 12h: ' + str(office["a.normal12h"]) +
+                          ' \n\tEnvio economico:  ' + str(office["a.economico"]))
+        session.close()
 
 
 def find_shortest_path(departure, arrival, type):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        return session.read_transaction(_find_shortest_path, departure, arrival, type)
 
+        for office in session.run(
+                'Match (a:Oficina {name: $departure}) RETURN a.urgente4h, a.urgente6h, a.urgente8h, a.normal12h, a.economico', departure=departure):
+            if office['a.' + str(type)] is False:
+                print 'El tipo de envio solicitado no esta disponible.'
+                return None
+        if type is 'urgente4h':
+            time = 4*60
+        elif type is 'urgente6h':
+            time = 6*60
+        elif type is 'urgente8h':
+            time = 8*60
+        elif type is 'normal12h':
+            time = 12*60
+        else:
+            time = 0
 
-def _find_shortest_path(tx, departure, arrival, type):
-    for office in tx.run(
-        'Match (a:Oficina {name: $departure}) RETURN a.urgente4h, a.urgente6h, a.urgente8h, a.normal12h, a.economico', departure=departure):
-        if office['a.' + str(type)] is False:
-            print 'El tipo de envio solicitado no esta disponible.'
-            return None
-    if type is 'urgente4h':
-        time = 4*60
-    elif type is 'urgente6h':
-        time = 6*60
-    elif type is 'urgente8h':
-        time = 8*60
-    elif type is 'normal12h':
-        time = 12*60
-    else:
-        time = 0
-
-    total_cost = 0
-    total_time = 0
-    relationships = []
-    route = []
-    if time is 0:
-        for office in tx.run(
-            'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
-            'RETURN relationships(a) as relationships, nodes(a) as nodes, '
-            'REDUCE(cost=0, r in relationships(a) | cost + r.costeAsociado) as totalCost '
-            'order by totalCost ASC limit 1', departure = departure, arrival = arrival):
-            print 'coste estimado: ' + str(office['totalCost'])
-            total_cost = float(office['totalCost'])
-            print 'Caminos entre las ciudades: '
-            for relationship in range(0, len(office['relationships'])):
-                print '\t' + str(office['relationships'][relationship]['name'])
-                total_time = + float(office['relationships'][relationship]['tiempo'])
-                relationships.append(str(office['relationships'][relationship]['name']))
-            print 'Nodos por los que pasa: '
-            for nodo in range(0, len(office['nodes'])):
-                print '\t' + str(office['nodes'][nodo]['name'])
-                route.append(str(office['nodes'][nodo]['name']))
-
-            for nodo in range(0, len(office['nodes'])):
-                if nodo >= len(office['nodes']) - 1:
-                    print str(office['nodes'][nodo]['name'])
-                else:
-                    print str(office['nodes'][nodo]['name']) + ' --[' + str(
-                        office['relationships'][nodo]['name']) + ']->',
-
-
-    else:
-        for office in tx.run(
-            'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
-            'RETURN relationships(a) as relationships, nodes(a) as nodes, '
-            'REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime '
-            'order by totalTime ASC limit 1', departure = departure, arrival = arrival):
-
-            if office["totalTime"] > time:
-                print 'No existe una ruta valida que cumpla ese tipo de envio.'
-            else:
-                print 'Tiempo estimado: ' + str(office['totalTime'])
-                total_time = float(office['totalTime'])
+        total_cost = 0
+        total_time = 0
+        relationships = []
+        route = []
+        if time is 0:
+            for office in session.run(
+                    'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
+                    'RETURN relationships(a) as relationships, nodes(a) as nodes, '
+                    'REDUCE(cost=0, r in relationships(a) | cost + r.costeAsociado) as totalCost '
+                    'order by totalCost ASC limit 1', departure = departure, arrival = arrival):
+                print 'coste estimado: ' + str(office['totalCost'])
+                total_cost = float(office['totalCost'])
                 print 'Caminos entre las ciudades: '
                 for relationship in range(0, len(office['relationships'])):
                     print '\t' + str(office['relationships'][relationship]['name'])
-                    total_cost = + float(office['relationships'][relationship]['costeAsociado'])
+                    total_time = + float(office['relationships'][relationship]['tiempo'])
                     relationships.append(str(office['relationships'][relationship]['name']))
                 print 'Nodos por los que pasa: '
                 for nodo in range(0, len(office['nodes'])):
                     print '\t' + str(office['nodes'][nodo]['name'])
                     route.append(str(office['nodes'][nodo]['name']))
+
                 for nodo in range(0, len(office['nodes'])):
-                    if nodo >= len(office['nodes'])-1:
+                    if nodo >= len(office['nodes']) - 1:
                         print str(office['nodes'][nodo]['name'])
                     else:
-                        print str(office['nodes'][nodo]['name']) + ' --[' + str(office['relationships'][nodo]['name']) + ']->',
+                        print str(office['nodes'][nodo]['name']) + ' --[' + str(
+                            office['relationships'][nodo]['name']) + ']->',
 
-    return dict({'type': type, 'total_cost': total_cost, 'total_time': total_time, 'relationships': relationships, 'route': route})
+        else:
+            for office in session.run(
+                    'MATCH a = (departure:Oficina {name: $departure})-[:Carretera | Ferroviario | Maritimo | Aereo*1..6]-(arrival:Oficina {name: $arrival}) '
+                    'RETURN relationships(a) as relationships, nodes(a) as nodes, '
+                    'REDUCE(tiempo=0, r in relationships(a) | tiempo + r.tiempo) as totalTime '
+                    'order by totalTime ASC limit 1', departure = departure, arrival = arrival):
+
+                if office["totalTime"] > time:
+                    print 'No existe una ruta valida que cumpla ese tipo de envio.'
+                else:
+                    print 'Tiempo estimado: ' + str(office['totalTime'])
+                    total_time = float(office['totalTime'])
+                    print 'Caminos entre las ciudades: '
+                    for relationship in range(0, len(office['relationships'])):
+                        print '\t' + str(office['relationships'][relationship]['name'])
+                        total_cost = + float(office['relationships'][relationship]['costeAsociado'])
+                        relationships.append(str(office['relationships'][relationship]['name']))
+                    print 'Nodos por los que pasa: '
+                    for nodo in range(0, len(office['nodes'])):
+                        print '\t' + str(office['nodes'][nodo]['name'])
+                        route.append(str(office['nodes'][nodo]['name']))
+                    for nodo in range(0, len(office['nodes'])):
+                        if nodo >= len(office['nodes'])-1:
+                            print str(office['nodes'][nodo]['name'])
+                        else:
+                            print str(office['nodes'][nodo]['name']) + ' --[' + str(office['relationships'][nodo]['name']) + ']->',
+        session.close()
+        return dict({'type': type, 'total_cost': total_cost, 'total_time': total_time, 'relationships': relationships, 'route': route})
 
 
 def new_package(path_info):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        session.read_transaction( _new_package, path_info)
 
+        aux = -1
+        for office in session.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
+                             'RETURN s.ID limit 1', name=path_info.get('route')[0]):
+            aux = office['s.ID']
 
-def _new_package(tx, path_info):
-    aux = -1
-    for office in tx.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
-                         'RETURN s.ID limit 1', name=path_info.get('route')[0]):
-        aux = office
-    if aux is -1:
-        print 'No hay vehiculos disponibles!'
-        return
-    else:
-        print 'Hay vehiculos!'
-    for office in tx.run(
-        'match (ID:ID) '
-        'set ID.PID = ID.PID + 1 '
-        'return ID.PID'):
-        ID = office['ID.PID']
-        print 'se ha acabado ID'
-    tipo = path_info.get('type')
-    print tipo
-    coste_total = path_info.get('total_cost')
-    print coste_total
-    tiempo_total = path_info.get('total_time')
-    print tiempo_total
-    ruta = path_info.get('route')
-    print ruta
-    relaciones = path_info.get('relationships')
-    print relaciones
-    for office in tx.run(
-        'MERGE (package:Paquete {ID: $ID, tipo: $tipo, coste_total: $coste_total, '
-        'tiempo_total: $tiempo_total, ruta: $ruta, relaciones: $relaciones}) ',
-        ID=ID, tipo=tipo, coste_total=coste_total,
-        tiempo_total=tiempo_total, ruta=ruta,
-        relaciones=relaciones):
-        print 'se ha acabado MERGE'
-    for office in tx.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}, (p:Paquete {ID:$ID})) '
-        'CREATE (p)-[:Transporta]->(s) '
-        'SET s.ruta = $ruta, s.destino = $destino',
-                         ID_vehiculo=aux, destino=path_info.get('route')[-1], ruta=path_info.get('route'), ID=ID):
-        print office
+        session.sync()
+        if aux is -1:
+            print 'No hay vehiculos disponibles!'
+            return
+        else:
+            print 'Hay vehiculos!'
+        for office in session.run(
+                'match (ID:ID) '
+                'set ID.PID = ID.PID + 1 '
+                'return ID.PID'):
+            ID = office['ID.PID']
+            print 'se ha acabado ID'
+            print ID
+        session.sync()
+        tipo = path_info.get('type')
+        print tipo
+        coste_total = path_info.get('total_cost')
+        print coste_total
+        tiempo_total = path_info.get('total_time')
+        print tiempo_total
+        ruta = path_info.get('route')
+        print ruta
+        relaciones = path_info.get('relationships')
+        print relaciones
+
+        session.run(
+            'MERGE (package:Paquete {ID: $ID, tipo: $tipo, coste_total: $coste_total, '
+            'tiempo_total: $tiempo_total, ruta: $ruta, relaciones: $relaciones}) ',
+            ID=ID, tipo=tipo, coste_total=coste_total,
+            tiempo_total=tiempo_total, ruta=ruta,
+            relaciones=relaciones)
+        session.sync()
+        print 'Paso merge'
+        destino = path_info.get('route')[-1]
+        print destino
+        session.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}), (p:Paquete {ID:$ID}) '
+               'CREATE (p)-[:Transporta]->(s) '
+               'SET s.ruta = $ruta, s.destino = $destino',
+               ID_vehiculo=aux, destino=destino, ruta=ruta, ID=ID)
+        session.sync()
         print 'se ha acabado CREATE'
+        session.close()
 
 """
 Preguntas:
