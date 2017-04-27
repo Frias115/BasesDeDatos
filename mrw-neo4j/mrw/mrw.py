@@ -111,11 +111,13 @@ def find_shortest_path(departure, arrival, type):
 def new_package(path_info):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-
+        posicion_actual = path_info.get('route')[0]
+        destino = path_info.get('route')[-1]
         aux = -1
+
         for office in session.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
-                             'RETURN s.ID limit 1', name=path_info.get('route')[0]):
-            aux = office['s.ID']
+                             'RETURN s', name=posicion_actual):
+            aux = office
 
         session.sync()
         if aux is -1:
@@ -123,41 +125,37 @@ def new_package(path_info):
             return
         else:
             print 'Hay vehiculos!'
+            vehicle_ID = aux['s'][0]['ID']
+            for vehicle in range(0,len(aux)):
+                if vehicle['destino'] is destino:
+                    vehicle_ID = vehicle['ID']
+
         for office in session.run(
                 'match (ID:ID) '
                 'set ID.PID = ID.PID + 1 '
                 'return ID.PID'):
             ID = office['ID.PID']
-            print 'se ha acabado ID'
-            print ID
         session.sync()
+
         tipo = path_info.get('type')
-        print tipo
         coste_total = path_info.get('total_cost')
-        print coste_total
         tiempo_total = path_info.get('total_time')
-        print tiempo_total
         ruta = path_info.get('route')
-        print ruta
         relaciones = path_info.get('relationships')
-        print relaciones
 
         session.run(
             'MERGE (package:Paquete {ID: $ID, tipo: $tipo, coste_total: $coste_total, '
-            'tiempo_total: $tiempo_total, ruta: $ruta, relaciones: $relaciones}) ',
+            'tiempo_restante: $tiempo_total, ruta: $ruta, relaciones: $relaciones, posicion_actual: $posicion_actual}) ',
             ID=ID, tipo=tipo, coste_total=coste_total,
             tiempo_total=tiempo_total, ruta=ruta,
-            relaciones=relaciones)
+            relaciones=relaciones, posicion_actual=posicion_actual)
         session.sync()
-        print 'Paso merge'
-        destino = path_info.get('route')[-1]
-        print destino
         session.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}), (p:Paquete {ID:$ID}) '
                'CREATE (p)-[:Transporta]->(s) '
                'SET s.ruta = $ruta, s.destino = $destino',
-               ID_vehiculo=aux, destino=destino, ruta=ruta, ID=ID)
+               ID_vehiculo=vehicle_ID, destino=destino, ruta=ruta, ID=ID)
         session.sync()
-        print 'se ha acabado CREATE'
+        print 'Package added to vehicle'
         session.close()
 
 """
@@ -185,6 +183,19 @@ si, tiene que tener informacion de la ruta. (por donde ha pasado y por donde va 
  
 Gestionar -> guardar datos en la base de datos
 consultar -> queries en la base de datos
+
+
+ - ¿Hay que hacer index? De que?
+ 
+ Si, de algo a lo que hagamos muchas consultas, hay que mirarlo
+ 
+ - ¿Un vehiculo solo cubre una ruta al final?
+ 
+ SI de punta a punta y nos olvidamos
+ 
+ Cuando un vehiculo acaba su ruta lo 'reinciamos'
+ 
+ Y no es necesario hacerse la funcioon de que avance, pero lo podemos hacer si queremos
  
  
 """
