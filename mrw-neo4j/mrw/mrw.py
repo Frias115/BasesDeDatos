@@ -169,6 +169,15 @@ def new_package(path_info):
         print 'Se ha cargado tu paquete al vehiculo'
         session.close()
 
+
+def back_to_office(vehicle_id):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.run('MATCH (vehicle:Vehiculo {ID:$ID})-[c:Esta]-(:Oficina), (oficina:Oficina {name:vehicle.origen}) '
+                    'CREATE (vehicle)-[:Esta]->(oficina) '
+                    'SET vehicle.destino = "", vehicle.ruta = "", vehicle.posicionActual = vehicle.origen '
+                    'DELETE c', ID=vehicle_id)
+        session.sync()
 """
 Preguntas:
 
@@ -208,6 +217,8 @@ consultar -> queries en la base de datos
  
  Y no es necesario hacerse la funcioon de que avance, pero lo podemos hacer si queremos
  
+ ¿Eliminamos los booleamos de la oficina que no usamos?
+ 
  
 """
 
@@ -230,3 +241,4 @@ if __name__ == "__main__":
 
     path_info = find_shortest_path('Oporto', 'Sevilla', 'economico')
     new_package(path_info)
+    back_to_office('VB1')
