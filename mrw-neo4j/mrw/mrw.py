@@ -113,22 +113,33 @@ def new_package(path_info):
     with driver.session() as session:
         posicion_actual = path_info.get('route')[0]
         destino = path_info.get('route')[-1]
-        aux = -1
+        aux = []
 
         for office in session.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
-                             'RETURN s', name=posicion_actual):
-            aux = office
+                             'RETURN s as nodes', name=posicion_actual):
+            aux.append(office['nodes'])
 
         session.sync()
-        if aux is -1:
+        if aux is []:
             print 'No hay vehiculos disponibles!'
             return
         else:
-            print 'Hay vehiculos!'
-            vehicle_ID = aux['s'][0]['ID']
-            for vehicle in range(0,len(aux)):
-                if vehicle['destino'] is destino:
-                    vehicle_ID = vehicle['ID']
+            disponible = False
+            id_auxiliar = -1
+            for vehiculo in aux:
+                if str(vehiculo['destino']) is '':
+                    disponible = True
+                    vehicle_ID = str(vehiculo['ID'])
+                elif str(vehiculo['destino']) == destino:
+                    disponible = True
+                    id_auxiliar = str(vehiculo['ID'])
+            if disponible is False:
+                print 'No hay vehiculos disponibles!'
+                return
+            else:
+                print 'Hay vehiculos!'
+            if id_auxiliar is not -1:
+                vehicle_ID = id_auxiliar
 
         for office in session.run(
                 'match (ID:ID) '
@@ -155,7 +166,7 @@ def new_package(path_info):
                'SET s.ruta = $ruta, s.destino = $destino',
                ID_vehiculo=vehicle_ID, destino=destino, ruta=ruta, ID=ID)
         session.sync()
-        print 'Package added to vehicle'
+        print 'Se ha cargado tu paquete al vehiculo'
         session.close()
 
 """
@@ -217,5 +228,5 @@ consultar -> queries en la base de datos
 
 if __name__ == "__main__":
 
-    path_info = find_shortest_path('Oporto', 'Barcelona', 'economico')
+    path_info = find_shortest_path('Oporto', 'Sevilla', 'economico')
     new_package(path_info)
