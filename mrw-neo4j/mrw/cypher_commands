@@ -1,10 +1,10 @@
 //Oficinas y puntos intermedios
-MERGE (B:Oficina {name: "Barcelona", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true, urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
-MERGE (M:puntoIntermedio {name: "Madrid", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false})
-MERGE (S:Oficina {name: "Sevilla", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:false, urgente4h: true, urgente6h: true, urgente8h: false, normal12h:true, economico:true})
-MERGE (V:puntoIntermedio {name: "Valencia", Aereo:true, Carretera:true, Ferrocarril:true, Maritimo:true})
-MERGE (Ma:Oficina {name: "Mallorca", Aereo:true, Carretera:false, Ferrocarril:false, Maritimo:true, urgente4h: false, urgente6h: true, urgente8h: true, normal12h:false, economico:true})
-MERGE (O:Oficina{name:'Oporto', Aereo:false, Carretera:true, Ferrocarril:false, Maritimo:false, urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
+MERGE (B:Oficina {name: "Barcelona", urgente4h: true, urgente6h: true, urgente8h: true, normal12h:true, economico:true})
+MERGE (M:puntoIntermedio {name: "Madrid"})
+MERGE (S:Oficina {name: "Sevilla", urgente4h: true, urgente6h: true, urgente8h: false, normal12h:true, economico:true})
+MERGE (V:puntoIntermedio {name: "Valencia"})
+MERGE (Ma:Oficina {name: "Mallorca", urgente4h: false, urgente6h: true, urgente8h: true, normal12h:false, economico:true})
+MERGE (O:Oficina{name:'Oporto', urgente4h: false, urgente6h: false, urgente8h: true, normal12h:true, economico:true})
 
 //Datos de envio
 MERGE (DEC:DatosEnvio {name: "Carretera", minX100km: 60, minCargaDescarga: 5, precioX100km: 1})
@@ -13,25 +13,31 @@ MERGE (DEF:DatosEnvio {name: "Ferrocarril", minX100km: 50, minCargaDescarga: 10,
 MERGE (DEM:DatosEnvio {name: "Maritimo", minX100km: 120, minCargaDescarga: 20, precioX100km: 0.3})
 
 //Vehiculos Barcelona
-MERGE (VB1:Vehiculo {ID: "VB1", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
-MERGE (VB2:Vehiculo {ID: "VB2", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
-MERGE (VB3:Vehiculo {ID: "VB3", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
-MERGE (VB4:Vehiculo {ID: "VB4", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: ''})
+MERGE (VB1:Vehiculo {ID: "VB1", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: '', tipo: ''})
+MERGE (VB2:Vehiculo {ID: "VB2", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: '', tipo: ''})
+MERGE (VB3:Vehiculo {ID: "VB3", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: '', tipo: ''})
+MERGE (VB4:Vehiculo {ID: "VB4", origen: 'Barcelona', destino: '', posicionActual: 'Barcelona', ruta: '', tipo: ''})
 
 //Vehiculos Mallorca
-MERGE (VMa1:Vehiculo {ID: "VMa1", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
-MERGE (VMa2:Vehiculo {ID: "VMa2", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
-MERGE (VMa3:Vehiculo {ID: "VMa3", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: ''})
+MERGE (VMa1:Vehiculo {ID: "VMa1", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: '', tipo: ''})
+MERGE (VMa2:Vehiculo {ID: "VMa2", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: '', tipo: ''})
+MERGE (VMa3:Vehiculo {ID: "VMa3", origen: 'Mallorca', destino: '', posicionActual: 'Mallorca', ruta: '', tipo: ''})
 
 //Vehiculos Oporto
-MERGE (VO1:Vehiculo {ID: "VO1", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: ''})
-MERGE (VO2:Vehiculo {ID: "VO2", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: ''})
+MERGE (VO1:Vehiculo {ID: "VO1", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: '', tipo: ''})
+MERGE (VO2:Vehiculo {ID: "VO2", origen: 'Oporto', destino: '', posicionActual: 'Oporto', ruta: '', tipo: ''})
 
 //Vehiculos Sevilla
-MERGE (VS1:Vehiculo {ID: "VS1", origen: 'Sevilla', destino: '', posicionActual: 'Sevilla', ruta: ''})
+MERGE (VS1:Vehiculo {ID: "VS1", origen: 'Sevilla', destino: '', posicionActual: 'Sevilla', ruta: '', tipo: ''})
 
 //ID de: Nodo
 MERGE (ID:ID {name: "ID", PID: 0})
+
+//Clientes
+MERGE (CL1:Cliente {name: "Roberto", ID: 1})
+MERGE (CL2:Cliente {name: "Sergio", ID: 2})
+MERGE (CL3:Cliente {name: "Ramon", ID: 3})
+MERGE (CL4:Cliente {name: "Mateo", ID: 4})
 
 CREATE
 //Relaciones de tipo Carretera
@@ -73,5 +79,4 @@ CREATE
 
 //Relaciones entre vehiculos y Sevilla
 (VS1)-[:Esta]->(S)
-
 

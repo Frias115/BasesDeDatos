@@ -108,11 +108,12 @@ def find_shortest_path(departure, arrival, type):
         return dict({'type': type, 'total_cost': total_cost, 'total_time': total_time, 'relationships': relationships, 'route': route})
 
 
-def new_package(path_info):
+def new_package(path_info, user_id):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
         posicion_actual = path_info.get('route')[0]
         destino = path_info.get('route')[-1]
+        tipo = path_info.get('type')
         aux = []
 
         for office in session.run('MATCH (p:Oficina {name: $name})-[:Esta]-(s:Vehiculo) '
@@ -130,7 +131,7 @@ def new_package(path_info):
                 if str(vehiculo['destino']) is '':
                     disponible = True
                     vehicle_ID = str(vehiculo['ID'])
-                elif str(vehiculo['destino']) == destino:
+                elif str(vehiculo['destino']) == destino and vehiculo['tipo'] == tipo:
                     disponible = True
                     id_auxiliar = str(vehiculo['ID'])
             if disponible is False:
@@ -148,7 +149,7 @@ def new_package(path_info):
             ID = office['ID.PID']
         session.sync()
 
-        tipo = path_info.get('type')
+
         coste_total = path_info.get('total_cost')
         tiempo_total = path_info.get('total_time')
         ruta = path_info.get('route')
@@ -156,28 +157,143 @@ def new_package(path_info):
 
         session.run(
             'MERGE (package:Paquete {ID: $ID, tipo: $tipo, coste_total: $coste_total, '
-            'tiempo_restante: $tiempo_total, ruta: $ruta, relaciones: $relaciones, posicion_actual: $posicion_actual}) ',
+            'tiempo_restante: $tiempo_total, ruta: $ruta, relaciones: $relaciones, '
+            'posicion_actual: $posicion_actual, id_vehiculo:$id_vehiculo, pagado:False}) ',
             ID=ID, tipo=tipo, coste_total=coste_total,
             tiempo_total=tiempo_total, ruta=ruta,
-            relaciones=relaciones, posicion_actual=posicion_actual)
+            relaciones=relaciones, posicion_actual=posicion_actual, id_vehiculo=vehicle_ID)
         session.sync()
-        session.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}), (p:Paquete {ID:$ID}) '
-               'CREATE (p)-[:Transporta]->(s) '
-               'SET s.ruta = $ruta, s.destino = $destino',
-               ID_vehiculo=vehicle_ID, destino=destino, ruta=ruta, ID=ID)
+
+        session.run('MATCH (s:Vehiculo {ID:$ID_vehiculo}), (p:Paquete {ID:$ID}), (u:Cliente {ID:$user_id}) '
+               'CREATE (p)-[:Transporta]->(s), (p)-[:Pertenece]->(u) '
+               'SET s.ruta = $ruta, s.destino = $destino, s.tipo = $tipo',
+               ID_vehiculo=vehicle_ID, destino=destino, ruta=ruta, ID=ID, user_id=user_id, tipo=tipo)
         session.sync()
         print 'Se ha cargado tu paquete al vehiculo'
         session.close()
+    return vehicle_ID
 
 
-def back_to_office(vehicle_id):
+def deliver_packages(vehicle_id):
     driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
     with driver.session() as session:
-        session.run('MATCH (vehicle:Vehiculo {ID:$ID})-[c:Esta]-(:Oficina), (oficina:Oficina {name:vehicle.origen}) '
-                    'CREATE (vehicle)-[:Esta]->(oficina) '
-                    'SET vehicle.destino = "", vehicle.ruta = "", vehicle.posicionActual = vehicle.origen '
+        session.run('MATCH (oficinaDestino:Oficina {name:vehicle.destino}), '
+                    '(vehicle:Vehiculo {ID:$ID})-[c:Esta]-(:Oficina), (vehicle)-[f:Transporta]-(paquete:Paquete) '
+                    'CREATE (paquete)-[:Almacenado]->(oficinaDestino) '
+                    'SET paquete.posicion_actual = oficinaDestino.name, paquete.tiempo_restante = 0, '
+                    'vehicle.destino = "", vehicle.ruta = "", vehicle.posicionActual = vehicle.origen, vehicle.tipo = "" '
+                    'DELETE f', ID=vehicle_id)
+        session.run('MATCH (vehicle:Vehiculo {ID:$ID})-[c:Esta]-(:Oficina), (oficinaOrigen:Oficina {name:vehicle.origen}) '
+                    'CREATE (vehicle)-[:Esta]->(oficinaOrigen) '
                     'DELETE c', ID=vehicle_id)
         session.sync()
+
+
+def charge_package(package_id):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.run('MATCH (p:Paquete {ID:$package_id}) '
+                    'SET p.pagado = True', package_id=package_id)
+        session.sync()
+
+
+def hand_package(package_id):
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        session.run('MATCH (p:Paquete {ID:$package_id, pagado:True})-[u:Almacenado]-() '
+                    'DELETE u', package_id=package_id)
+        session.sync()
+
+
+def check_packages_type(client_id=None):
+    type = raw_input('¿Que tipo de paquete quieres ver? \n0: Todos\n1: Urgente4h\n2: Urgente6h\n3: Urgente8h\n4: Normal12h\n5: Economico')
+    type = int(type)
+    if type == 0:
+        type=None
+    elif type == 1:
+        type = 'urgente4h'
+    elif type == 2:
+        type = 'urgente6h'
+    elif type == 3:
+        type = 'urgente8h'
+    elif type == 4:
+        type = 'normal12h'
+    elif type == 5:
+        type = 'economico'
+    else:
+        print 'No valido'
+        return
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        packages = []
+        if type is None:
+            if client_id is None:
+                for package in session.run('MATCH (p:Paquete) return p'):
+                    packages.append(package)
+            else:
+                print 'Los paquetes del usuario ' + str(client_id) + ' son:'
+                for package in session.run('MATCH (p:Paquete)-[:Pertenece]-(:Cliente {ID:$client_id}) return p', client_id=client_id):
+                    packages.append(package)
+        else:
+            if client_id is None:
+                for package in session.run('MATCH (p:Paquete {tipo:$type}) return p', type=type):
+                    packages.append(package)
+            else:
+                print 'Los paquetes del usuario ' + str(client_id) + ' son:'
+                for package in session.run('MATCH (p:Paquete {tipo:$type})-[:Pertenece]-(:Cliente {ID:$client_id}) return p', client_id=client_id, type=type):
+                    packages.append(package)
+        for package in packages:
+            print 'ID: ' + str(package['p']['ID']) + ' Tipo: ' + str(package['p']['tipo']) + ' Coste: ' \
+                  + str(package['p']['coste_total']) + ' Tiempo restante: ' + str(package['p']['tiempo_restante']) \
+                  + ' Ruta: ' + str(package['p']['ruta']) + ' Relaciones: ' + str(package['p']['relaciones']) \
+                  + ' Posicion actual: ' + str(package['p']['posicion_actual']) + ' ID vehiculo: ' + str(
+                package['p']['id_vehiculo']) \
+                  + ' Pagado: ' + str(package['p']['pagado'])
+
+
+def check_packages_charged(client_id=None):
+    charged = raw_input('¿Que tipo de paquete quieres ver? \n0: Todos\n1: Pagados\n2: No pagados')
+    charged = int(charged)
+    if charged == 0:
+        charged=None
+    elif charged == 1:
+        charged = True
+    elif charged == 2:
+        charged = False
+    else:
+        print 'No valido'
+        return
+    driver = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "bleh"))
+    with driver.session() as session:
+        packages = []
+        if charged is None:
+            if client_id is None:
+                for package in session.run('MATCH (p:Paquete) return p'):
+                    packages.append(package)
+            else:
+                print 'Los paquetes del usuario ' + str(client_id) + ' son:'
+                for package in session.run('MATCH (p:Paquete)-[:Pertenece]-(:Cliente {ID:$client_id}) return p', client_id=client_id):
+                    packages.append(package)
+        else:
+            if client_id is None:
+                for package in session.run('MATCH (p:Paquete {pagado:$charged}) return p', charged=charged):
+                    packages.append(package)
+            else:
+                print 'Los paquetes del usuario ' + str(client_id) + ' son:'
+                for package in session.run('MATCH (p:Paquete {pagado:$charged})-[:Pertenece]-(:Cliente {ID:$client_id}) return p', client_id=client_id, charged=charged):
+                    packages.append(package)
+        total_import = 0
+        for package in packages:
+            if not bool(package['p']['pagado']):
+                total_import = total_import + float(package['p']['coste_total'])
+            print 'ID: ' + str(package['p']['ID']) + ' Tipo: ' + str(package['p']['tipo']) + ' Coste: ' \
+                  + str(package['p']['coste_total']) + ' Tiempo restante: ' + str(package['p']['tiempo_restante']) \
+                  + ' Ruta: ' + str(package['p']['ruta']) + ' Relaciones: ' + str(package['p']['relaciones']) \
+                  + ' Posicion actual: ' + str(package['p']['posicion_actual']) + ' ID vehiculo: ' + str(
+                package['p']['id_vehiculo']) \
+                  + ' Pagado: ' + str(package['p']['pagado'])
+        print 'Importe total debido: ' + str(total_import)
+
 """
 Preguntas:
 
@@ -222,23 +338,36 @@ consultar -> queries en la base de datos
  
 """
 
-
-# Cosas que vamos a necesitar:
-# 1. Puntos de entrega (+ info servicios disponibles)
-# 2. Puntos de recogida (+ info servicios disponibles)
-# 3. Clientes
-# 4. Transportes (Carretera, Aereo, Maritimo, Ferrocarril) (+ info tiempos y costes)
-# 5. Plataformas intermedias
-# 6. Tipos de envio (Urgente, Urgente madrugadores, Urgente primera hora, Envio normal, Envio economico)
-
-# https://neo4j.com/docs/cypher-refcard/current/
-
-# Ruta mas corta
-# http://stackoverflow.com/questions/26458589/shortest-path-through-weighted-graph
-# http://stackoverflow.com/questions/28032830/cypher-query-to-return-nodes-in-path-order
-
 if __name__ == "__main__":
 
     path_info = find_shortest_path('Oporto', 'Sevilla', 'economico')
-    new_package(path_info)
-    back_to_office('VB1')
+    new_package(path_info, 1)
+
+    path_info = find_shortest_path('Oporto', 'Sevilla', 'economico')
+    new_package(path_info, 2)
+
+    path_info = find_shortest_path('Oporto', 'Barcelona', 'economico')
+    new_package(path_info, 3)
+
+    path_info = find_shortest_path('Oporto', 'Barcelona', 'normal12h')
+    new_package(path_info, 4)
+
+    path_info = find_shortest_path('Oporto', 'Mallorca', 'economico')
+    new_package(path_info, 1)
+
+    path_info = find_shortest_path('Oporto', 'Barcelona', 'economico')
+    new_package(path_info, 2)
+
+    vehiculo = new_package(find_shortest_path('Oporto', 'Sevilla', 'economico'), 3)
+
+    deliver_packages(vehiculo)
+
+    path_info = find_shortest_path('Oporto', 'Mallorca', 'normal12h')
+    new_package(path_info, 4)
+
+    charge_package(1)
+    charge_package(4)
+    hand_package(1)
+    hand_package(2)
+
+    check_packages_charged(2)
