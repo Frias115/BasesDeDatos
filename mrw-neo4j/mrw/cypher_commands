@@ -79,4 +79,3 @@ CREATE
 
 //Relaciones entre vehiculos y Sevilla
 (VS1)-[:Esta]->(S)
-
