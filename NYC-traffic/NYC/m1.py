@@ -5,5 +5,4 @@ import sys
 import string
 
 for line in sys.stdin:
-    line.strip(';')
-    
+    line = line.strip()
