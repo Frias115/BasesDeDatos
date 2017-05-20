@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # 5. Calle que mas trafico aporta a Brodway y trafico total aportado.
 
 import sys

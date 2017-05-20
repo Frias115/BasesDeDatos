@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 # 8. Sentido de cada calle con mas trafico y trafico total.
 
 import sys
