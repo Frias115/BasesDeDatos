@@ -11,6 +11,9 @@ for line in data:
     fila = line.split(',')
     if primera_linea:
         firstLine = fila
+        for data in range(7, len(firstLine) - 1):
+            print firstLine[data] + ',',
+        print firstLine[len(firstLine) - 1],
         primera_linea = False
     else:
         pasa_chequeo = False
@@ -24,5 +27,11 @@ for line in data:
                     else:
                         pasa_chequeo = False
                         break
+
+
         if pasa_chequeo:
-            print fila
+            print fila[2] + ',',
+            for data in range(7, len(firstLine) - 1):
+                print fila[data] + ',',
+            print fila[len(firstLine) - 1],
+            print ''

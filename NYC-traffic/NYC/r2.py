@@ -24,10 +24,8 @@ for line in data:
         aux_dates.append(dates.get(date)[counter] + 1)
         dates[date] = aux_dates
     else:
-        counter = 0
         for data in row:
             aux_dates.append(data)
-            counter = counter + 1
         aux_dates.append(1)
         dates[date] = aux_dates
 
