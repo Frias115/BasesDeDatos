@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # 8. Sentido de cada calle con mas trafico y trafico total.
+
 import sys
 
 num_of_columns = 0
@@ -25,4 +26,9 @@ for line in data:
                         pasa_chequeo = False
                         break
         if pasa_chequeo:
-            print fila
+            print fila[2] + ',',
+            print fila[5] + ',',
+            for data in range(7, len(firstLine) - 1):
+                print fila[data] + ',',
+            print fila[len(firstLine) -1],
+            print ''
