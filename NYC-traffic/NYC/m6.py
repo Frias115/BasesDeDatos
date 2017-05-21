@@ -24,5 +24,12 @@ for line in data:
                     else:
                         pasa_chequeo = False
                         break
+
+
         if pasa_chequeo:
-            print fila
+            print fila[2] + ',',
+            print fila[4] + ',',
+            for data in range(7, len(firstLine) - 1):
+                print fila[data] + ',',
+            print fila[len(firstLine) - 1],
+            print ''
