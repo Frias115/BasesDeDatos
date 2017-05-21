@@ -3,13 +3,12 @@
 # 4. Hora del dia con mas trafico por calle.
 
 import sys
-import operator
 
 # TODO: PREGUNTAR SI TAMBIEN HAY QUE TENER EN CUENTA DATE
-# TODO: PREGUNTAR SI HQY QUE ENSEÑAR EL TOTAL DE TRAFICO O NO
 
 streets = {}
 primera_linea = True
+firstLine = None
 data = sys.stdin.readlines()
 for line in data:
     row = line.split(', ')
