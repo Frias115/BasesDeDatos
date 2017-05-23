@@ -44,4 +44,4 @@ for hour in (range(0, 24)):
             traffic = streets[street][hour]
             best_street = street
     # Printing hour and best street
-    print  str(hour) + ':00-' + str(hour+1) + ':00 -> ' + best_street
+    print best_street
