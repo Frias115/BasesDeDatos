@@ -9,7 +9,7 @@ to_broadway = 0
 data = sys.stdin.readlines()
 for line in data:
     row = line.split(', ')
-    # Stripping away \n character from last element in row
+    # Stripping away '\n' character from last element in row
     row[-1] = row[-1].rstrip()
 
     # Data processing

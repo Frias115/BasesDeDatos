@@ -31,6 +31,8 @@ for line in data:
                         break
         # If all of the above conditions are met, proceed to print data
 
+        # We are using 'ñ' to separate because if separated with ',' data doesn't
+        # order well when using unix's order command
         if pasa_chequeo:
             # Print name of street
             print fila[2] + 'ñ',

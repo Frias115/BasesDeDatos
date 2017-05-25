@@ -15,7 +15,7 @@ for line in data:
         primera_linea = False
     else:
         pasa_chequeo = False
-        # If the row's length is the same as the first line's and go to Broadway, continue
+        # If the row's length is the same as the first line's and traffic goes or comes from Broadway, continue
         if len(fila) == len(firstLine) and (fila[3].lstrip().rstrip() == 'BROADWAY' or fila[4].lstrip().rstrip() == 'BROADWAY'):
             pasa_chequeo = True
             # Remove first and last spaces of every element
@@ -31,7 +31,6 @@ for line in data:
         # If all of the above conditions are met, proceed to print data
 
         if pasa_chequeo:
-
             # Prining street that goes to broadway
             print fila[3] + ',',
             # Prining street that comes from broadway

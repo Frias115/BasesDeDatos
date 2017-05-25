@@ -19,6 +19,7 @@ for line in data:
     # Changing list elements data type from string to int
     row = map(int, row)
 
+    # Operating for every equal street
     if current_street == street:
         counter = 0
         # Saving every value per hour and number of days
@@ -26,16 +27,19 @@ for line in data:
             acc_traffic[counter] = acc_traffic[counter] + data
             counter = counter + 1
 
+    # If street name changes
     else:
+        # And it's not the first line
         if current_street is not None:
-            # Highest traffic per hour in a given street
+            # calculate highest traffic per hour in a given street
             value = max(acc_traffic)
             # Hour
-            index = acc_traffic.index(max(acc_traffic))
+            index = acc_traffic.index(value)
 
             # Printing name of street, hour range and value
-            print current_street + ',' + str(index) + ':00,' + str(value)
+            print current_street + ',' + str(index) + ':00-' + str(index + 1) + ':00,' + str(value)
 
+        # Resetting variables for next street
         current_street = street
         acc_traffic = []
         for data in row:
