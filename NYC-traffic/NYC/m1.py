@@ -33,9 +33,10 @@ for line in data:
         if pasa_chequeo:
             # Print name of street
             print fila[2] + ',',
-            # Print data until last position
-            for data in range(7, len(firstLine) - 1):
-                print fila[data] + ',',
-            # Print last position
-            print fila[len(firstLine) -1],
+            total_traffic = 0
+            # Add traffic to total_traffic
+            for data in range(7, len(firstLine)):
+                total_traffic = total_traffic + int(fila[data])
+            # Print total_traffic
+            print total_traffic,
             print ''

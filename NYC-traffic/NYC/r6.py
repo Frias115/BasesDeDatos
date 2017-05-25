@@ -3,9 +3,16 @@
 # 6. Calle que mas trafico aporta a Brodway por franja de hora.
 
 import sys
-import operator
 
-streets = {}
+primera_linea = True
+firstLine = None
+
+current_street = None
+acc_traffic = []
+
+current_streets = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+max_traffic = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
 data = sys.stdin.readlines()
 for line in data:
     row = line.split(', ')
@@ -17,31 +24,25 @@ for line in data:
 
     # Changing list elements data type from string to int
     row = map(int, row)
-    aux_streets = []
 
-    # If street name is already a key in the dict
-    if streets.has_key(street):
+    if current_street == street:
         counter = 0
-        # Saving every value per hour
+        # Saving every value per hour and number of days
         for data in row:
-            aux_streets.append(streets.get(street)[counter] + data)
+            acc_traffic[counter] = acc_traffic[counter] + data
             counter = counter + 1
-        streets[street] = aux_streets
-    # If not, create the key in the dictionary
-    else:
-        # Saving every value per hour
-        for data in row:
-            aux_streets.append(data)
-        streets[street] = aux_streets
 
-# For every range of hours
-for hour in (range(0, 24)):
-    traffic = 0
-    best_street = None
-    # Collect the street with highest traffic at a given hour
-    for street in streets:
-        if streets[street][hour] > traffic:
-            traffic = streets[street][hour]
-            best_street = street
-    # Printing hour and best street
-    print best_street
+    else:
+        if current_street is not None:
+            for hour in range(0,24):
+                if max_traffic[hour] < acc_traffic[hour]:
+                    max_traffic[hour] = acc_traffic[hour]
+                    current_streets[hour] = current_street
+
+        current_street = street
+        acc_traffic = []
+        for data in row:
+            acc_traffic.append(data)
+
+for hour in range(0,24):
+    print current_streets[hour]

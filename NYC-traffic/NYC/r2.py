@@ -5,7 +5,9 @@
 import sys
 import operator
 
-dates = {}
+current_date = None
+acc_traffic = []
+
 data = sys.stdin.readlines()
 for line in data:
     row = line.split(', ')
@@ -17,35 +19,27 @@ for line in data:
 
     # Changing list elements data type from string to int
     row = map(int, row)
-    aux_dates = []
-    # If date is already a key in the dict
-    if dates.has_key(date):
+
+    if current_date == date:
         counter = 0
         # Saving every value per hour and number of days
         for data in row:
-            aux_dates.append(dates.get(date)[counter] + data)
+            acc_traffic[counter] = acc_traffic[counter] + data
             counter = counter + 1
-        aux_dates.append(dates.get(date)[counter] + 1)
-        dates[date] = aux_dates
-    # If not, create the key in the dictionary
+        acc_traffic[counter] = acc_traffic[counter] + 1
+
     else:
-        # store every value per hour and number of dates
+        if current_date is not None:
+            print current_date + ',',
+
+            for element in range(0,(len(acc_traffic) - 2)):
+                print str(acc_traffic[element] / acc_traffic[-1]) + ',',
+
+            print str(acc_traffic[-2] / acc_traffic[-1])
+
+        current_date = date
+        acc_traffic = []
         for data in row:
-            aux_dates.append(data)
-        aux_dates.append(1)
-        dates[date] = aux_dates
+            acc_traffic.append(data)
+        acc_traffic.append(1)
 
-# Calculate median of every hour of a date / number of days
-for date in dates:
-    aux_dates = []
-    for data in range(0, (len(dates.get(date)) - 1)):
-        aux_dates.append(dates.get(date)[data] / dates.get(date)[-1])
-    dates[date] = aux_dates
-
-# Order dates
-sorted_dates = sorted(dates.items(), key=operator.itemgetter(0), reverse=True)
-
-# print date and the median of every hour of that date
-for date in sorted_dates:
-    # TODO: PREGUNTAR SI HACE FALTA ÍNDICE PARA LA REPRESENTACIÓN DE LOS DATOS
-    print date[0] + ' ' + str(date[1])

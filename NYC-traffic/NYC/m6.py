@@ -15,8 +15,8 @@ for line in data:
         primera_linea = False
     else:
         pasa_chequeo = False
-        # If the row's length is the same as the first line's,continue
-        if len(fila) == len(firstLine):
+        # If the row's length is the same as the first line's and go to Broadway, continue
+        if len(fila) == len(firstLine) and fila[4].lstrip().rstrip() == 'BROADWAY':
             pasa_chequeo = True
             # Remove first and last spaces of every element
             for element in range(0, len(fila)):
@@ -31,14 +31,11 @@ for line in data:
         # If all of the above conditions are met, proceed to print data
 
         if pasa_chequeo:
-            # Only printing rows that go to Broadway
-            if fila[4] == 'BROADWAY':
-                # TODO: PREGUNTAR A PABLO SI ESTÁ BIEN QUE EL PRINT NOS DEJE UN ESPACIO EL MISMO
-                # Print name of street
-                print fila[2] + ',',
-                # Print data until last position
-                for data in range(7, len(firstLine) - 1):
-                    print fila[data] + ',',
-                # Print last position
-                print fila[len(firstLine) - 1],
-                print ''
+            # Print name of street
+            print fila[2] + ',',
+            # Print data until last position
+            for data in range(7, len(firstLine) - 1):
+                print fila[data] + ',',
+            # Print last position
+            print fila[len(firstLine) - 1],
+            print ''

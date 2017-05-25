@@ -12,10 +12,6 @@ for line in data:
     # Parsing file attributes
     if primera_linea:
         firstLine = fila
-        # Printing index (hours)
-        for data in range(7, len(firstLine) - 1):
-            print firstLine[data] + ',',
-        print firstLine[len(firstLine) - 1],
         primera_linea = False
     else:
         pasa_chequeo = False

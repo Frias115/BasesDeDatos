@@ -3,9 +3,13 @@
 # 3. Calle con mas trafico y trafico total.
 
 import sys
-import operator
 
-streets = {}
+current_street = None
+acc_traffic = 0
+
+max_street = None
+max_traffic = 0
+
 data = sys.stdin.readlines()
 for line in data:
     row = line.split(', ')
@@ -15,18 +19,14 @@ for line in data:
     # Data processing
     street = row.pop(0)
 
-    # Changing list elements data type from string to int
-    row = map(int, row)
+    if current_street == street:
+        acc_traffic = acc_traffic + int(row[0])
 
-    # If street name is already a key in the dict, add sum of row's elements to its existing value
-    if streets.has_key(street):
-        streets[street] = streets.get(street) + sum(row)
-    # If not, create the key in the dictionary and store sum of row as it's value
     else:
-        streets[street] = sum(row)
+        if acc_traffic > max_traffic:
+            max_street = current_street
+            max_traffic = acc_traffic
+        current_street = street
+        acc_traffic = int(row[0])
 
-# Sort results to get street with most traffic
-sorted_streets = sorted(streets.items(), key=operator.itemgetter(1), reverse=True)
-
-# print street name and result
-print sorted_streets[0][0] + ' ' + str(sorted_streets[0][1])
+print max_street + ',' + str(max_traffic)
